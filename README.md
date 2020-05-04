@@ -76,7 +76,7 @@ https://www.sotalive.tk/api/aprs-tracklog/stations
 #### Parameters
 Name | Description |Default Value|Example  
 :----|:------------|:------------|:---------
-range| Return activator list within a given range. The parameter value is specified by 'range' in hours. | 48 | 3
+range| Return activator list within a given range. The parameter value is specified by `range` in hours. | 48 | 3
 
 ### Example Requests
 ```
@@ -94,7 +94,7 @@ https://www.sotalive.tk/api/aprs-tracklog/tracks
 #### Parameters
 Name | Description |Default Value|Example  
 :----|:------------|:------------|:---------
-range| Return activator's tracks in GeoJSON format within a given range. The parameter value is specified by 'range' in hours. | 48 | 32
+range| Return activator's tracks in GeoJSON format within a given range. The parameter value is specified by `range` in hours. | 48 | 32
 
 ### Example Requests
 ```
