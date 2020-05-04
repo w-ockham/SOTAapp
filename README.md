@@ -78,11 +78,11 @@ Name | Description |Default Value|Example
 :----|:------------|:------------|:---------
 range| Return activator list within a given range. The parameter value is specified by `range` in hours. | 48 | 3
 
-### Example Requests
+#### Example Requests
 ```
 https://www.sotalive.tk/api/aprs-tracklog/stations?range=3
 ```
-### Example Response
+#### Example Response
 ```
 {"stations": ["JL1NIE", "JS1YFC"]}
 ```
@@ -96,11 +96,11 @@ Name | Description |Default Value|Example
 :----|:------------|:------------|:---------
 range| Return activator's tracks in GeoJSON format within a given range. The parameter value is specified by `range` in hours. | 48 | 32
 
-### Example Requests
+#### Example Requests
 ```
 https://www.sotalive.tk/api/aprs-tracklog/tracks?range=32
 ```
-### Example Response
+#### Example Response
 ```
 {"tracks": [
  {"type": "Feature", 
