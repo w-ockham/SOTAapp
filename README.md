@@ -75,7 +75,7 @@ Return alerts within the next 16 hours. You can also specify the summit by `code
 ```
 https://www.sotalive.tk/api/sotaalerts
 
-https://www.sotalive.tk/api/sotaalerts/<code_prefix>
+https://www.sotalive.tk/api/sotaalerts/summits/<code_prefix>
 ```
 #### Parameters
 Name | Description |Default Value|Example  
@@ -112,7 +112,7 @@ Return spots within the past 24 hours. You can also specify the summit by `code_
 ```
 https://www.sotalive.tk/api/sotaspots
 
-https://www.sotalive.tk/api/sotaspots/<code_prefix>
+https://www.sotalive.tk/api/sotaspots/summits/<code_prefix>
 ```
 #### Parameters
 Name | Description |Default Value|Example  
@@ -122,7 +122,7 @@ mode | The mode of the spots for which to return results. | |cw
 
 #### Example Requests
 ```
-https://www.sotalive.tk/api/sotaspots/W?range=16&mode=cw
+https://www.sotalive.tk/api/sotaspots/summits/W?range=16&mode=cw
 
 ```
 #### Example Response
@@ -167,11 +167,12 @@ https://www.sotalive.tk/api/aprs-tracklog/tracks
 #### Parameters
 Name | Description |Default Value|Example  
 :----|:------------|:------------|:---------
+station:Return activator's tracks in GeoJSON format by a given callsign. The parameter value is specified by `station` . |  | JL1NIE
 range| Return activator's tracks in GeoJSON format within a given range. The parameter value is specified by `range` in hours. | 48 | 32
 
 #### Example Requests
 ```
-https://www.sotalive.tk/api/aprs-tracklog/tracks?range=32
+https://www.sotalive.tk/api/aprs-tracklog/tracks?range=32&station=JL1NIE
 ```
 #### Example Response
 ```
@@ -180,9 +181,5 @@ https://www.sotalive.tk/api/aprs-tracklog/tracks?range=32
    "geometry": {"type": "LineString", "coordinates": [[47.769667, 7.7455]]}, "properties":
    {"callsign": "JL1NIE", "ssid": "7", "lastseen": "2020-05-02T23:32:29"}},
 
- {"type": "Feature",
-  "geometry": {"type": "LineString", "coordinates": [[39.081833, -104.889], [39.0795, -104.8895], ... [39.078667, -104.889833]]},
-   "properties":
-    {"callsign": "JS1YFC", "ssid": "6", "lastseen": "2020-05-03T12:21:24"}}
   ]}  
 ```
