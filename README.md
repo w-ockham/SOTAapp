@@ -1,5 +1,7 @@
-# API for SOTA Web Applications
+# SOTA App
+SOTA App is an API for SOTA Web Applications.
 
+# API References
 ## Get Summits Information (JA region only)
 ### Resource URL
 ```
@@ -9,7 +11,7 @@ https://www.sotalive.tk/api/sotasummits/ja
 Name | Description |Default Value|Example  
 :----|:------------|:------------|:---------
 code | Return a SOTA summit specified by `code`        | | JA/NN-001|
- | Return SOTA summits within a given range of the lattitude and longitude. The parameter value is specified by `lat,lon,range`.
+<br> | Return SOTA summits within a given range of the lattitude and longitude. The parameter value is specified by `lat,lon,range`.
 lat | attitude | | 35.754976
 lon | longitude | | 138.232899
 range| range in kilometers| 20 | 10
@@ -48,7 +50,7 @@ https://www.sotalive.tk/api/reverse-geocoder/LonLatToAddressElev
 ### Parameters
 Name | Description |Default Value|Example  
 :----|:------------|:------------|:---------
-| Return the JCC/JCG and its address by a given lattitude and longitude. The parameter value is specified by `lat,lon`.
+<br>| Return the JCC/JCG and its address by a given lattitude and longitude. The parameter value is specified by `lat,lon`.
 lat | attitude | | 35.754976
 lon | longitude | | 138.232899
 
@@ -103,7 +105,7 @@ https://www.sotalive.tk/api/aprs-tracklog/tracks?range=32
 #### Example Response
 ```
 {"tracks": [
- {"type": "Feature", 
+ {"type": "Feature",
    "geometry": {"type": "LineString", "coordinates": [[47.769667, 7.7455]]}, "properties":
    {"callsign": "JL1NIE", "ssid": "7", "lastseen": "2020-05-02T23:32:29+00:00"}},
 
