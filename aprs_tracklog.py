@@ -13,7 +13,7 @@ def aprs_track_stations(rg):
           res = []
           if not rg:
                rg = 48
-          now  = int(time.time())
+          now = int(datetime.utcnow().timestamp())
           query = 'select distinct operator from aprslog where time > ?'
           cur.execute(query, (now - int(rg)*3600,))
           for station in cur.fetchall():
@@ -47,7 +47,7 @@ def aprs_track_tracks(rg):
                   
                for id in tracks.keys():
                     if tracks[id]:
-                         t = datetime.fromtimestamp(last_seen,timezone.utc)
+                         t = datetime.fromtimestamp(last_seen)
                          f = Feature(geometry=LineString(tracks[id]),
                                      properties={'callsign':op, 'ssid':id, 'lastseen':t.isoformat()})
                          res += (f,)

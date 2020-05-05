@@ -69,6 +69,77 @@ https://www.sotalive.tk/api/reverse-geocoder/LonLatToAddressElev?lat=35.917757&l
  "hsrc": "5m\uff08\u30ec\u30fc\u30b6\uff09",
  "errors": "OK"}
 ```
+## Get recent SOTA Alerts
+Return alerts within the next 16 hours. You can also specify the summit by `code_prefix`.
+#### Resource URL
+```
+https://www.sotalive.tk/api/sotaalerts
+
+https://www.sotalive.tk/api/sotaalerts/<code_prefix>
+```
+#### Parameters
+Name | Description |Default Value|Example  
+:----|:------------|:------------|:---------
+range| Return alert list within a given range. The parameter value is specified by `range` in hours. | 16 | 3
+
+#### Example Requests
+```
+https://www.sotalive.tk/api/sotalerts/W4?range=16
+```
+#### Example Response
+```
+{"errors": "OK", "alerts": [
+{"dateActivated": "2020-05-03T07:00:00+00:00",
+ "activatingCallsign": "W1PTS",
+ "summitCode": "W4C/WM-029",
+ "summitDetails": "Rich Benchmark, 1556m, 8 pts",
+ "lat": 35.2922, "lon": -83.0359,
+ "frequency": "5-cw, 7-cw, 5-ssb, 7-ssb, 14-ssb, 145-fm",
+ "comments": "time +/- Adventure Team FOG",
+ "poster": "(Posted by W1PTS)"},
+{"dateActivated": "2020-05-03T07:00:00+00:00",
+ "activatingCallsign": "KB7HH",
+ "summitCode": "W7A/AW-013",
+ "summitDetails": "Spruce Mountain, 2346m, 10 pts",
+ "lat": 34.4631, "lon": -112.4038,
+ "frequency": "7.033-cw, 10.113-cw, 14.030-cw",
+ "comments": "ANNUAL AZ S2S",
+"poster": "(Posted by KB7HH)"}, ... ]}
+```
+## Get recent SOTA Spots
+Return spots within the past 24 hours. You can also specify the summit by `code_prefix`.
+#### Resource URL
+```
+https://www.sotalive.tk/api/sotaalerts
+
+https://www.sotalive.tk/api/sotaalerts/<code_prefix>
+```
+#### Parameters
+Name | Description |Default Value|Example  
+:----|:------------|:------------|:---------
+range| Return spot list within a given range. The parameter value is specified by `range` in hours. | 24 | 3
+mode | The mode of the spots for which to return results. | |cw
+
+#### Example Requests
+```
+https://www.sotalive.tk/api/sotaspots/W?range=16&mode=cw
+
+```
+#### Example Response
+```
+{"errors": "OK",
+ "spots": [
+ {"timeStamp": "2020-05-04T20:37:09",
+ "activatorCallsign": "N0DNF",
+ "summitCode": "W7I/SI-153",
+ "summitDetails": "7081, 2158m, 4 pts",
+ "lat": 42.7673, "lon": -112.4596,
+ "frequency": "14.062",
+ "mode": "CW",
+ "comments": "De ZL1BYZ", "poster": "ZL1BYZ"},
+... ]}
+ ```
+
 ## Get Activator's APRS tracks
 ### Station List
 #### Resource URL
@@ -107,11 +178,11 @@ https://www.sotalive.tk/api/aprs-tracklog/tracks?range=32
 {"tracks": [
  {"type": "Feature",
    "geometry": {"type": "LineString", "coordinates": [[47.769667, 7.7455]]}, "properties":
-   {"callsign": "JL1NIE", "ssid": "7", "lastseen": "2020-05-02T23:32:29+00:00"}},
+   {"callsign": "JL1NIE", "ssid": "7", "lastseen": "2020-05-02T23:32:29"}},
 
  {"type": "Feature",
   "geometry": {"type": "LineString", "coordinates": [[39.081833, -104.889], [39.0795, -104.8895], ... [39.078667, -104.889833]]},
    "properties":
-    {"callsign": "JS1YFC", "ssid": "6", "lastseen": "2020-05-03T12:21:24+00:00"}}
+    {"callsign": "JS1YFC", "ssid": "6", "lastseen": "2020-05-03T12:21:24"}}
   ]}  
 ```

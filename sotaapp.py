@@ -7,6 +7,7 @@ import json
 from reverse_geocoder import rev_geocode
 from aprs_tracklog import aprs_track_stations, aprs_track_tracks
 from sotasummit import sotasummit_ja
+from sotaalerts import sotaalerts, sotaspots
 
 app = Flask(__name__)
 
@@ -43,6 +44,32 @@ def SOTAsummitsJA():
      lng = request.args.get('lon')
      rng = request.args.get('range')
      res = sotasummit_ja(code,lat,lng,rng)
+     return(json.dumps(res))
+
+@app.route("/api/sotaalerts/<string:code_prefix>")
+def SOTAlerts2(code_prefix):
+     rng = request.args.get('range')
+     res = sotaalerts(code_prefix, rng)
+     return(json.dumps(res))
+
+@app.route("/api/sotaalerts")
+def SOTAlerts():
+     rng = request.args.get('range')
+     res = sotaalerts(None, rng)
+     return(json.dumps(res))\
+
+@app.route("/api/sotaspots/<string:code_prefix>")
+def SOTASpots2(code_prefix):
+     mode = request.args.get('mode')
+     rng = request.args.get('range')
+     res = sotaspots(code_prefix,mode,rng)
+     return(json.dumps(res))
+
+@app.route("/api/sotaspots")
+def SOTASpots():
+     mode = request.args.get('mode')
+     rng = request.args.get('range')
+     res = sotaspots(None,mode,rng)
      return(json.dumps(res))
 
 if __name__ == "__main__":
