@@ -167,7 +167,7 @@ https://www.sotalive.tk/api/aprs-tracklog/tracks
 #### Parameters
 Name | Description |Default Value|Example  
 :----|:------------|:------------|:---------
-station:Return activator's tracks in GeoJSON format by a given callsign. The parameter value is specified by `station` . |  | JL1NIE
+station|Return activator's tracks in GeoJSON format by a given callsign. The parameter value is specified by `station` . |  | JL1NIE
 range| Return activator's tracks in GeoJSON format within a given range. The parameter value is specified by `range` in hours. | 48 | 32
 
 #### Example Requests
