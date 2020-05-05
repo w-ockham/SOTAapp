@@ -110,9 +110,9 @@ https://www.sotalive.tk/api/sotalerts/W4?range=16
 Return spots within the past 24 hours. You can also specify the summit by `code_prefix`.
 #### Resource URL
 ```
-https://www.sotalive.tk/api/sotaalerts
+https://www.sotalive.tk/api/sotaspots
 
-https://www.sotalive.tk/api/sotaalerts/<code_prefix>
+https://www.sotalive.tk/api/sotaspots/<code_prefix>
 ```
 #### Parameters
 Name | Description |Default Value|Example  
