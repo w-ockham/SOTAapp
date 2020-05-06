@@ -13,7 +13,7 @@ def make_response(slist, continent, isspot):
             return res
         else:
             if isspot:
-                (time, call, sm, sm_info, lat, lng, freq, mode,  cmmt,p ) = r
+                (time, stn, call, sm, sm_info, lat, lng, freq, mode,  cmmt,p ) = r
                 t = datetime.fromtimestamp(int(time))
                 if continent:
                     q = 'select association,continent from associations where code = ?'
@@ -25,6 +25,7 @@ def make_response(slist, continent, isspot):
                             res.append({
                                 'timeStamp': t.isoformat(),
                                 'activatorCallsign': call,
+                                'station': stn,
                                 'summitCode': sm,
                                 'summitDetails': sm_info,
                                 'association': assc,
@@ -40,6 +41,7 @@ def make_response(slist, continent, isspot):
                     res.append({
                         'timeStamp': t.isoformat(),
                         'activatorCallsign': call,
+                        'station': stn,
                         'summitCode': sm,
                         'summitDetails': sm_info,
                         'lat': float(lat),
@@ -51,7 +53,7 @@ def make_response(slist, continent, isspot):
                     })
 
             else:
-                (time, call, sm, sm_info, lat, lng, freq, cmmt,p ) = r
+                (time, stn, call, sm, sm_info, lat, lng, freq, cmmt,p ) = r
                 t = datetime.fromtimestamp(int(time))
                 if continent:
                     q = 'select association,continent from associations where code = ?'
@@ -63,6 +65,7 @@ def make_response(slist, continent, isspot):
                             res.append({
                                 'dateActivated': t.isoformat(),
                                 'activatingCallsign': call,
+                                'station': stn,
                                 'summitCode': sm,
                                 'summitDetails': sm_info,
                                 'association': assc,
@@ -77,6 +80,7 @@ def make_response(slist, continent, isspot):
                     res.append({
                         'dateActivated': t.isoformat(),
                         'activatingCallsign': call,
+                        'station': stn,
                         'summitCode': sm,
                         'summitDetails': sm_info,
                         'lat': float(lat),
@@ -107,10 +111,10 @@ def sotaalerts(code_prefix, continent = [],  r = None):
     try:
         if code_prefix :
             code_prefix = code_prefix[0:3]
-            query = 'select time, callsign, summit, summit_info, lat_dest, lng_dest,alert_freq,alert_comment, poster  from alerts where time >= ? and time < ?and summit like ?'
+            query = 'select time, operator, callsign, summit, summit_info, lat_dest, lng_dest,alert_freq,alert_comment, poster  from alerts where time >= ? and time < ?and summit like ?'
             cur.execute(query, (now, now + int(rng)* 3600, code_prefix + '%', ))
         else:
-            query = 'select time, callsign, summit, summit_info, lat_dest, lng_dest,alert_freq,alert_comment, poster  from alerts where time >= ? and time < ?'
+            query = 'select time, operator, callsign, summit, summit_info, lat_dest, lng_dest,alert_freq,alert_comment, poster  from alerts where time >= ? and time < ?'
             cur.execute(query, (now, now + int(rng)* 3600, ))
         r = cur.fetchall()
         res =  make_response(r, continent,  False)
@@ -142,17 +146,17 @@ def sotaspots(code_prefix, mode, continent = [], r = None):
         if code_prefix :
             code_prefix = code_prefix[0:3]
             if mode == None:
-                query = 'select time, callsign, summit, summit_info, lat, lng, spot_freq, spot_mode, spot_comment, poster from spots where time > ? and summit like ?'
+                query = 'select time, operator, callsign, summit, summit_info, lat, lng, spot_freq, spot_mode, spot_comment, poster from spots where time > ? and summit like ?'
                 cur.execute(query, (now - int(rng)*3600, code_prefix + '%', ))
             else:
-                query = 'select time, callsign, summit, summit_info, lat, lng, spot_freq, spot_mode, spot_comment, poster from spots where time > ? and summit like ? and UPPER(spot_mode) = UPPER(?)'
+                query = 'select time, operator, callsign, summit, summit_info, lat, lng, spot_freq, spot_mode, spot_comment, poster from spots where time > ? and summit like ? and UPPER(spot_mode) = UPPER(?)'
                 cur.execute(query, (now - int(rng)*3600, code_prefix + '%', mode, ))
         else:
             if mode == None:
-                query = 'select time, callsign, summit, summit_info, lat, lng, spot_freq, spot_mode, spot_comment, poster from spots where time > ?'
+                query = 'select time, operator, callsign, summit, summit_info, lat, lng, spot_freq, spot_mode, spot_comment, poster from spots where time > ?'
                 cur.execute(query, (now - int(rng)*3600, ))
             else:
-                query = 'select time, callsign, summit, summit_info, lat, lng, spot_freq, spot_mode, spot_comment, poster from spots where time > ? and UPPER(spot_mode) = UPPER(?)'
+                query = 'select time, operator, callsign, summit, summit_info, lat, lng, spot_freq, spot_mode, spot_comment, poster from spots where time > ? and UPPER(spot_mode) = UPPER(?)'
                 cur.execute(query, (now - int(rng)*3600, mode, ))
             
 
