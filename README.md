@@ -112,7 +112,8 @@ Response 1:
 ```
 {"errors": "OK", "alerts": [
 {"dateActivated": "2020-05-03T07:00:00+00:00",
- "activatingCallsign": "W1PTS",
+ "activatingCallsign": "W1PTS/P",
+ "staion": "W1PTS",
  "summitCode": "W4C/WM-029",
  "summitDetails": "Rich Benchmark, 1556m, 8 pts",
  "lat": 35.2922, "lon": -83.0359,
@@ -121,6 +122,7 @@ Response 1:
  "poster": "(Posted by W1PTS)"},
 {"dateActivated": "2020-05-03T07:00:00+00:00",
  "activatingCallsign": "KB7HH",
+ "station": "KB7HH",
  "summitCode": "W7A/AW-013",
  "summitDetails": "Spruce Mountain, 2346m, 10 pts",
  "lat": 34.4631, "lon": -112.4038,
@@ -133,6 +135,7 @@ Response 2:
 {"errors": "OK", "alerts": [
 {"dateActivated": "2020-05-06T11:30:00",
 "activatingCallsign": "DF3FS/P",
+"station":"DF3FS",
 "summitCode": "DM/HE-570",
 "summitDetails": "Gro\u00dfe Haube, 658m, 6 pts",
 "association": "Germany (Low Mountains)",
@@ -143,6 +146,7 @@ Response 2:
 "poster": "(Posted by DF3FS)"},
 {"dateActivated": "2020-05-06T15:30:00",
  "activatingCallsign": "W1PTS",
+ "station":"W1PTS",
  "summitCode": "W4G/NG-022",
  "summitDetails": "Black Mountain, 1140m, 8 pts",
  "association": "USA - Georgia",
@@ -195,6 +199,7 @@ Response 1:
  "spots": [
  {"timeStamp": "2020-05-04T20:37:09",
  "activatorCallsign": "N0DNF",
+ "station": "N0DNF",
  "summitCode": "W7I/SI-153",
  "summitDetails": "7081, 2158m, 4 pts",
  "lat": 42.7673, "lon": -112.4596,
@@ -209,6 +214,7 @@ Response 2:
 "spots": [
 {"timeStamp": "2020-05-05T15:23:10",
  "activatorCallsign": "N6MKW",
+ "station":"N6MKW",
  "summitCode": "W6/CT-093",
  "summitDetails": "Burnt Peak, 1766m, 6 pts",
  "association": "USA",
@@ -220,7 +226,8 @@ Response 2:
  "comments": "[APRS2SOTA] QRT TU",
  "poster": "APRS2SOTA"},
  {"timeStamp": "2020-05-05T16:51:08",
- "activatorCallsign": "AC0PR",
+ "activatorCallsign": "AC0PR/P",
+ "station":"AC0PR",
  "summitCode": "W7U/IR-035",
  "summitDetails": "7450, 2271m, 4 pts",
  "association": "USA - Utah",
