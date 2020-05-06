@@ -2,10 +2,15 @@
 SOTA App is an API for SOTA Web Applications.
 
 # API References
-## Get Summits Information (JA region only)
+## Get Summits Information
 ### Resource URL
+JA
 ```
 https://www.sotalive.tk/api/sotasummits/ja
+```
+Worldwide
+```
+https://www.sotalive.tk/api/sotasummits/ww
 ```
 ### Parameters
 Name | Description |Default Value|Example  
@@ -70,12 +75,23 @@ https://www.sotalive.tk/api/reverse-geocoder/LonLatToAddressElev?lat=35.917757&l
  "errors": "OK"}
 ```
 ## Get recent SOTA Alerts
-Return alerts within the next 16 hours. You can also specify the summit by `code_prefix`.
+Return alerts within the next 16 hours.  
+You can also specify the summit by `code_prefix` or `continent_list`.
 #### Resource URL
+GET All Alerts
 ```
 https://www.sotalive.tk/api/sotaalerts
-
+```
+GET Alerts specified by the summit code `code_prefix`.
+```
 https://www.sotalive.tk/api/sotaalerts/summits/<code_prefix>
+```
+
+GET Alerts specified by the continent list `continent_list` .   
+`continent_list` is comma separated list of a continent .  
+Available continent is in one of the following codes: 'EU','AF','AS','OC','NA' and 'SA'.
+```
+https://www.sotalive.tk/api/sotaalerts/continent/<continent_list>
 ```
 #### Parameters
 Name | Description |Default Value|Example  
@@ -83,10 +99,16 @@ Name | Description |Default Value|Example
 range| Return alert list within a given range. The parameter value is specified by `range` in hours. | 16 | 3
 
 #### Example Requests
+Request 1:
 ```
-https://www.sotalive.tk/api/sotalerts/W4?range=16
+https://www.sotalive.tk/api/sotaalerts/summits/W4?range=16
+```
+Request 2:
+```
+https://www.sotalive.tk/api/sotaalerts/continent/NA,EU
 ```
 #### Example Response
+Response 1:
 ```
 {"errors": "OK", "alerts": [
 {"dateActivated": "2020-05-03T07:00:00+00:00",
@@ -106,13 +128,48 @@ https://www.sotalive.tk/api/sotalerts/W4?range=16
  "comments": "ANNUAL AZ S2S",
 "poster": "(Posted by KB7HH)"}, ... ]}
 ```
+Response 2:
+```
+{"errors": "OK", "alerts": [
+{"dateActivated": "2020-05-06T11:30:00",
+"activatingCallsign": "DF3FS/P",
+"summitCode": "DM/HE-570",
+"summitDetails": "Gro\u00dfe Haube, 658m, 6 pts",
+"association": "Germany (Low Mountains)",
+"continent": "EU",
+"lat": 50.3877, "lon": 9.7546,
+"frequency": "7-cw, 10-cw, 14-cw",
+"comments": "Time may be + or - 1 hour",
+"poster": "(Posted by DF3FS)"},
+{"dateActivated": "2020-05-06T15:30:00",
+ "activatingCallsign": "W1PTS",
+ "summitCode": "W4G/NG-022",
+ "summitDetails": "Black Mountain, 1140m, 8 pts",
+ "association": "USA - Georgia",
+ "continent": "NA",
+ "lat": 34.6749, "lon": -84.0061,
+ "frequency": "5-cw, 7-cw, 5-ssb, 7-ssb, 14-ssb, 145-fm",
+ "comments": "time +/- Adventure Team FOG", "poster": "(Posted by W1PTS)"},
+ ... ]}
+```
+
 ## Get recent SOTA Spots
-Return spots within the past 24 hours. You can also specify the summit by `code_prefix`.
+Return spots within the past 24 hours.   
+You can also specify the summit by `code_prefix` or `continent_list`.
 #### Resource URL
+GET All spots
 ```
 https://www.sotalive.tk/api/sotaspots
-
+```
+GET Spots specified by the summit code `code_prefix`.
+```
 https://www.sotalive.tk/api/sotaspots/summits/<code_prefix>
+```
+GET Spots specified by the continent list `continent_list` .  
+`continent_list` is comma separated list of a continent.  
+Available continent is in one of the following codes: 'EU','AF','AS','OC','NA' and 'SA'.
+```
+https://www.sotalive.tk/api/sotaspots/continent/<continent_list>
 ```
 #### Parameters
 Name | Description |Default Value|Example  
@@ -121,11 +178,18 @@ range| Return spot list within a given range. The parameter value is specified b
 mode | The mode of the spots for which to return results. | |cw
 
 #### Example Requests
+Request 1:
 ```
 https://www.sotalive.tk/api/sotaspots/summits/W?range=16&mode=cw
 
 ```
+Request 2:
+```
+https://www.sotalive.tk/api/sotaspots/continent/NA?mode=cw
+
+```
 #### Example Response
+Response 1:
 ```
 {"errors": "OK",
  "spots": [
@@ -139,6 +203,35 @@ https://www.sotalive.tk/api/sotaspots/summits/W?range=16&mode=cw
  "comments": "De ZL1BYZ", "poster": "ZL1BYZ"},
 ... ]}
  ```
+Response 2:
+```
+{"errors": "OK",
+"spots": [
+{"timeStamp": "2020-05-05T15:23:10",
+ "activatorCallsign": "N6MKW",
+ "summitCode": "W6/CT-093",
+ "summitDetails": "Burnt Peak, 1766m, 6 pts",
+ "association": "USA",
+ "continent": "NA",
+ "lat": 34.6825,
+ "lon": -118.5769,
+ "frequency": "7.000",
+ "mode": "cw",
+ "comments": "[APRS2SOTA] QRT TU",
+ "poster": "APRS2SOTA"},
+ {"timeStamp": "2020-05-05T16:51:08",
+ "activatorCallsign": "AC0PR",
+ "summitCode": "W7U/IR-035",
+ "summitDetails": "7450, 2271m, 4 pts",
+ "association": "USA - Utah",
+ "continent": "NA",
+ "lat": 37.7038, "lon": -113.468,
+ "frequency": "10.1110",
+ "mode": "CW",
+ "comments": "[RBNHole] at N0OI 22 WPM 21 dB SNR",
+ "poster": "RBNHOLE"},
+ ... ]}
+```
 
 ## Get Activator's APRS tracks
 ### Station List
