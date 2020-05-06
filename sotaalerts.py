@@ -2,45 +2,95 @@ from datetime import datetime, timezone
 import sqlite3
 import time
 
-def make_response(slist,spotp):
+def make_response(slist, continent, isspot):
     res = []
+    if continent:
+            conn = sqlite3.connect('association.db')
+            cur = conn.cursor()
+            continent = list(map(lambda x: x.upper(), continent))
     for r in slist:
         if not r:
             return res
         else:
-            if spotp:
+            if isspot:
                 (time, call, sm, sm_info, lat, lng, freq, mode,  cmmt,p ) = r
                 t = datetime.fromtimestamp(int(time))
-                res.append({
-                    'timeStamp': t.isoformat(),
-                    'activatorCallsign': call,
-                    'summitCode': sm,
-                    'summitDetails': sm_info,
-                    'lat': float(lat),
-                    'lon': float(lng),
-                    'frequency':freq,
-                    'mode': mode,
-                    'comments': cmmt,
-                    'poster': p
-                })
+                if continent:
+                    q = 'select association,continent from associations where code = ?'
+                    cur.execute(q, (sm,))
+                    r = cur.fetchone()
+                    if r:
+                        (assc, ct) = r
+                        if ct in continent:
+                            res.append({
+                                'timeStamp': t.isoformat(),
+                                'activatorCallsign': call,
+                                'summitCode': sm,
+                                'summitDetails': sm_info,
+                                'association': assc,
+                                'continent': ct,
+                                'lat': float(lat),
+                                'lon': float(lng),
+                                'frequency':freq,
+                                'mode': mode,
+                                'comments': cmmt,
+                                'poster': p
+                            })
+                else:
+                    res.append({
+                        'timeStamp': t.isoformat(),
+                        'activatorCallsign': call,
+                        'summitCode': sm,
+                        'summitDetails': sm_info,
+                        'lat': float(lat),
+                        'lon': float(lng),
+                        'frequency':freq,
+                        'mode': mode,
+                        'comments': cmmt,
+                        'poster': p
+                    })
 
             else:
                 (time, call, sm, sm_info, lat, lng, freq, cmmt,p ) = r
                 t = datetime.fromtimestamp(int(time))
-                res.append({
-                    'dateActivated': t.isoformat(),
-                    'activatingCallsign': call,
-                    'summitCode': sm,
-                    'summitDetails': sm_info,
-                    'lat': float(lat),
-                    'lon': float(lng),
-                    'frequency':freq,
-                    'comments': cmmt,
-                    'poster': p
-                })
+                if continent:
+                    q = 'select association,continent from associations where code = ?'
+                    cur.execute(q, (sm,))
+                    r = cur.fetchone()
+                    if r:
+                        (assc, ct) = r
+                        if ct in continent:
+                            res.append({
+                                'dateActivated': t.isoformat(),
+                                'activatingCallsign': call,
+                                'summitCode': sm,
+                                'summitDetails': sm_info,
+                                'association': assc,
+                                'continent': ct,
+                                'lat': float(lat),
+                                'lon': float(lng),
+                                'frequency':freq,
+                                'comments': cmmt,
+                                'poster': p
+                            })
+                else:
+                    res.append({
+                        'dateActivated': t.isoformat(),
+                        'activatingCallsign': call,
+                        'summitCode': sm,
+                        'summitDetails': sm_info,
+                        'lat': float(lat),
+                        'lon': float(lng),
+                        'frequency':freq,
+                        'comments': cmmt,
+                        'poster': p
+                    })
+                
+    if continent:
+        conn.close()
     return res
 
-def sotaalerts(code_prefix, r):
+def sotaalerts(code_prefix, continent = [],  r = None):
 
     conn = sqlite3.connect('alert.db')
     cur = conn.cursor()
@@ -63,7 +113,7 @@ def sotaalerts(code_prefix, r):
             query = 'select time, callsign, summit, summit_info, lat_dest, lng_dest,alert_freq,alert_comment, poster  from alerts where time >= ? and time < ?'
             cur.execute(query, (now, now + int(rng)* 3600, ))
         r = cur.fetchall()
-        res =  make_response(r, False)
+        res =  make_response(r, continent,  False)
         conn.close();
         if res:
             return {'errors': 'OK', 'alerts': res}
@@ -74,7 +124,7 @@ def sotaalerts(code_prefix, r):
         conn.close()
         return {'errors': 'parameter out of range'}
 
-def sotaspots(code_prefix,mode, r):
+def sotaspots(code_prefix, mode, continent = [], r = None):
 
     conn = sqlite3.connect('alert.db')
     cur = conn.cursor()
@@ -107,7 +157,7 @@ def sotaspots(code_prefix,mode, r):
             
 
         r = cur.fetchall()
-        res =  make_response(r, True)
+        res =  make_response(r, continent, True)
         conn.close();
         if res:
             return {'errors': 'OK', 'spots': res}
@@ -115,14 +165,13 @@ def sotaspots(code_prefix,mode, r):
             return {'errors': 'No spots.'}
 
     except Exception as err:
-        print(err)
         conn.close()
         return {'errors': 'parameter out of range'}
 
     
 if __name__ == "__main__":
-    print(sotaalerts('W','24'))
-    print(sotaalerts('JA',None))
-    print(sotaspots('JA',None,'24'))
-    print(sotaspots('JA','ssb','24'))
-    print(sotaspots(None,'ssb','24'))
+#    print(sotaalerts('W',[],'24'))
+#    print(sotaspots(None ,None))
+    print(sotaalerts('DM',['EU'],None))
+    print(sotaalerts(None,['NA','EU'],None))
+    print(sotaspots(None, None, ['NA','EU']))

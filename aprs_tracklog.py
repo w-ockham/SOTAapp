@@ -22,13 +22,17 @@ def aprs_track_stations(rg):
      except Exception as err:
           return {'errors':'parameter out of range'}
      
-def aprs_track_tracks(rg):
+def aprs_track_tracks(oper, rg):
      try:
           conn = sqlite3.connect('aprslog.db')
           cur = conn.cursor()
           if not rg:
                rg = 48
-          stns = aprs_track_stations(rg)
+          if not oper:
+               stns = aprs_track_stations(rg)
+          else:
+               stns = {'stations': [oper[0:16]] }
+               
           res = []
           for op in stns['stations']:
                tracks = {}

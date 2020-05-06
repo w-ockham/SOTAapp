@@ -6,7 +6,7 @@ import json
 
 from reverse_geocoder import rev_geocode
 from aprs_tracklog import aprs_track_stations, aprs_track_tracks
-from sotasummit import sotasummit_ja
+from sotasummit import sotasummit
 from sotaalerts import sotaalerts, sotaspots
 
 app = Flask(__name__)
@@ -33,43 +33,57 @@ def AprsTrackLogStations():
 
 @app.route("/api/aprs-tracklog/tracks")
 def AprsTrackLogTracks():
+     stn = request.args.get('station')
      rg = request.args.get('range')
-     res = aprs_track_tracks(rg)
+     res = aprs_track_tracks(stn, rg)
      return(json.dumps(res))
 
-@app.route("/api/sotasummits/ja")
-def SOTAsummitsJA():
+@app.route("/api/sotasummits/<string:region>")
+def SOTAsummits(region):
      code = request.args.get('code')
      lat = request.args.get('lat')
      lng = request.args.get('lon')
      rng = request.args.get('range')
-     res = sotasummit_ja(code,lat,lng,rng)
+     res = sotasummit(region, code, lat, lng, rng)
      return(json.dumps(res))
 
-@app.route("/api/sotaalerts/<string:code_prefix>")
-def SOTAlerts2(code_prefix):
+@app.route("/api/sotaalerts/summits/<string:code_prefix>")
+def SOTAlertsSummit(code_prefix):
      rng = request.args.get('range')
-     res = sotaalerts(code_prefix, rng)
+     res = sotaalerts(code_prefix, None, rng)
+     return(json.dumps(res))
+
+@app.route("/api/sotaalerts/continent/<string:continent>")
+def SOTAlertsContinent(continent):
+     rng = request.args.get('range')
+     res = sotaalerts(None, continent.split(','), rng)
      return(json.dumps(res))
 
 @app.route("/api/sotaalerts")
 def SOTAlerts():
      rng = request.args.get('range')
-     res = sotaalerts(None, rng)
+     res = sotaalerts(None, None, rng)
      return(json.dumps(res))\
 
-@app.route("/api/sotaspots/<string:code_prefix>")
-def SOTASpots2(code_prefix):
+@app.route("/api/sotaspots/summits/<string:code_prefix>")
+def SOTASpotsSummit(code_prefix):
      mode = request.args.get('mode')
      rng = request.args.get('range')
-     res = sotaspots(code_prefix,mode,rng)
+     res = sotaspots(code_prefix, None, mode, rng)
+     return(json.dumps(res))
+
+@app.route("/api/sotaspots/continent/<string:continent>")
+def SOTASpotsContinent(continent):
+     mode = request.args.get('mode')
+     rng = request.args.get('range')
+     res = sotaspots(None , mode, continent.split(','), rng)
      return(json.dumps(res))
 
 @app.route("/api/sotaspots")
 def SOTASpots():
      mode = request.args.get('mode')
      rng = request.args.get('range')
-     res = sotaspots(None,mode,rng)
+     res = sotaspots(None, mode, None, rng)
      return(json.dumps(res))
 
 if __name__ == "__main__":
