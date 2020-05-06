@@ -279,7 +279,10 @@ https://www.sotalive.tk/api/aprs-tracklog/tracks?range=32&station=JL1NIE
 {"tracks": [
  {"type": "Feature",
    "geometry": {"type": "LineString", "coordinates": [[47.769667, 7.7455]]}, "properties":
-   {"callsign": "JL1NIE", "ssid": "7", "lastseen": "2020-05-02T23:32:29"}},
-
+   {"callsign": "JL1NIE", "ssid": "7",
+   "lastseen": "2020-05-02T23:32:29",
+   "distance": 25,
+   "summit": 'JA/NN-001'}},
+  ...
   ]}  
 ```

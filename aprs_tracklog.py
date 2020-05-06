@@ -39,21 +39,28 @@ def aprs_track_tracks(oper, rg):
                for s in ssid_table:
                     tracks[s] = []
                
-               query = 'select time,lat,lng,state from aprslog where operator = ?'
+               query = 'select time,lat,lng,dist,summit,state from aprslog where operator = ?'
                cur.execute(query, (op,))
                last_seen = 0
-               for (t,lat,lng,st) in cur.fetchall():
+               for (t,lat,lng,dist,sm,st) in cur.fetchall():
                     ssid = ssid_table[int(st)//10]
                     tracks[ssid] += [(float(lat),float(lng))]
                     now = int(t)
                     if now > last_seen:
                          last_seen = now
-                  
+                         distance = dist
+                         summit = sm
+                         
                for id in tracks.keys():
                     if tracks[id]:
                          t = datetime.fromtimestamp(last_seen)
                          f = Feature(geometry=LineString(tracks[id]),
-                                     properties={'callsign':op, 'ssid':id, 'lastseen':t.isoformat()})
+                                     properties={'callsign':op,
+                                                 'ssid':id,
+                                                 'lastseen':t.isoformat(),
+                                                 'distance':distance,
+                                                 'summit':summit,
+                                     })
                          res += (f,)
           return({'tracks': res})
      except Exception as err:
