@@ -24,13 +24,13 @@ def make_response(worldwide, flag, slist):
                     'code': summit_id,
                     'lat': lat,
                     'lon': lng,
-                    'maidenhead:':gl,
+                    'maidenhead':gl,
                     'pts': pts,
                     'elev': elev,
                     'name': name,
+                    'name_k': '',
                     'desc': desc
                 })
-
             else:
                 (summit_id, lat, lng, pts, elev, name, desc, name_k, desc_k) = r
                 if (gsifl):
@@ -46,6 +46,7 @@ def make_response(worldwide, flag, slist):
                     'pts': pts,
                     'elev': elev,
                     'name': name_k,
+                    'name_k':name,
                     'desc': desc_k,
                     'gsi_info': gsi
                 })
