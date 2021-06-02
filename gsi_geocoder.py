@@ -113,7 +113,9 @@ def gsi_rev_geocoder(lat, lng, elev):
                 r = lookup_muniCode(muni)
                 r['addr1'] = res['results']['lv01Nm']
             else:
-                return {'errors': 'OUTSIDE_JA', 'maidenhead':gl}
+                r = {'pref': '', 'addr2': '', 'addr1': '', 'type': 'JCC',
+                     'jcc':':Unkown', 'jcc_text':''
+                }
             if elev:
                 r_get = requests.get(elev_uri)
                 if r_get.status_code == 200:
@@ -125,6 +127,19 @@ def gsi_rev_geocoder(lat, lng, elev):
             r['errors'] = 'OK'
             return r
         else:
+            r = {'pref': '', 'addr2': '', 'addr1': '', 'type': 'JCC',
+                 'jcc':':Unkown', 'jcc_text':''
+            }
+            if elev:
+                r_get = requests.get(elev_uri)
+                if r_get.status_code == 200:
+                    res = r_get.json()
+                    if res:
+                        r['elevation'] = res['elevation']
+                        r['hsrc'] = res['hsrc']
+                        r['maidenhead'] = gl
+                        r['errors'] = 'OK'
+                        return r
             raise Exception
     except Exception as err:
         return {'errors': 'parameter out of range'}
