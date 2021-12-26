@@ -18,7 +18,7 @@ def make_response(worldwide, flag, slist):
         if not r:
             return res
         else:
-            (summit_id, lat, lng, pts, bonus, elev, name, desc, name_k, desc_k, _, _, actcnt, lastact, lastcall) = r
+            (summit_id, lat, lng, pts, bonus, elev, name, name_k, desc, desc_k, _, _, actcnt, lastact, lastcall) = r
             if (gsifl):
                 gsi = gsi_rev_geocoder(lat, lng, True)
             else:
@@ -32,8 +32,8 @@ def make_response(worldwide, flag, slist):
                 'pts': pts,
                 'bonus': bonus,
                 'elev': elev,
-                'name': name_k,
-                'name_k':name,
+                'name':name,
+                'name_k':name_k,
                 'desc': desc_k,
                 'actcnt': actcnt,
                 'lastact': lastact,
