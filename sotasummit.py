@@ -1,6 +1,7 @@
 import pyproj
 import sqlite3
 import maidenhead as mh
+import re
 from gsi_geocoder import gsi_rev_geocoder
 
 grs80 = pyproj.Geod(ellps='GRS80')
@@ -17,50 +18,35 @@ def make_response(worldwide, flag, slist):
         if not r:
             return res
         else:
-            if worldwide:
-                (summit_id, lat, lng, pts, elev, name, desc) = r
-                gl = mh.to_maiden(float(lat), float(lng),precision=4)
-                res.append({
-                    'code': summit_id,
-                    'lat': lat,
-                    'lon': lng,
-                    'maidenhead':gl,
-                    'pts': pts,
-                    'elev': elev,
-                    'name': name,
-                    'name_k': '',
-                    'desc': desc
-                })
+            (summit_id, lat, lng, pts, bonus, elev, name, desc, name_k, desc_k, _, _, actcnt, lastact, lastcall) = r
+            if (gsifl):
+                gsi = gsi_rev_geocoder(lat, lng, True)
             else:
-                (summit_id, lat, lng, pts, elev, name, desc, name_k, desc_k) = r
-                if (gsifl):
-                    gsi = gsi_rev_geocoder(lat, lng, True)
-                else:
-                    gsi = None
-                gl = mh.to_maiden(float(lat), float(lng),precision=4)
-                res.append({
-                    'code': summit_id,
-                    'lat': lat,
-                    'lon': lng,
-                    'maidenhead':gl,
-                    'pts': pts,
-                    'elev': elev,
-                    'name': name_k,
-                    'name_k':name,
-                    'desc': desc_k,
-                    'gsi_info': gsi
-                })
+                gsi = None
+            gl = mh.to_maiden(float(lat), float(lng),precision=4)
+            res.append({
+                'code': summit_id,
+                'lat': lat,
+                'lon': lng,
+                'maidenhead':gl,
+                'pts': pts,
+                'bonus': bonus,
+                'elev': elev,
+                'name': name_k,
+                'name_k':name,
+                'desc': desc_k,
+                'actcnt': actcnt,
+                'lastact': lastact,
+                'lastcall': lastcall,
+                'gsi_info': gsi
+            })
 
     return res
 
 
 def sotasummit_region(worldwide, options):
 
-    if worldwide:
-        conn = sqlite3.connect('database/dx_summits.db')
-    else:
-        conn = sqlite3.connect('database/ja_summits.db')
-
+    conn = sqlite3.connect('database/summits.db')
     cur = conn.cursor()
 
     try:
@@ -73,13 +59,8 @@ def sotasummit_region(worldwide, options):
         name = options['name']
 
         if code:
-            if worldwide:
-                query = 'select * from summits where code like ?'
-            else:
-                query = 'select * from summits where code like ?'
-            print("exec")
+            query = 'select * from summits where code like ?'
             cur.execute(query, ('%' + code.upper() + '%', ))
-            print("done")
             r = cur.fetchall()
             res = make_response(worldwide, gsifl, r)
             conn.close()
@@ -92,8 +73,15 @@ def sotasummit_region(worldwide, options):
                 query = 'select * from summits where name like ?'
             else:
                 query = 'select * from summits where name_k like ?'
-            cur.execute(query, ('%' + name + '%', ))
+            m = re.match(r'"(.+)"',name)
+            if m:
+                arg = m.group(1)
+            else:
+                arg = '%' + name + '%'
+            cur.execute(query, (arg, ))
             r = cur.fetchall()
+            print(arg)
+            print(len(r))
             res = make_response(worldwide, gsifl, r)
             conn.close()
             if res:
@@ -126,11 +114,7 @@ def sotasummit_region(worldwide, options):
             else:
                 elev = 0
                 
-            if worldwide:
-                query = 'select * from summits where (lat > ?) and (lat < ?) and (lng > ?) and (lng < ?) and (alt > ?)'
-            else:
-                query = 'select * from summits where (lat > ?) and (lat < ?) and (lng > ?) and (lng < ?) and (alt > ?)'
-
+            query = 'select * from summits where (lat > ?) and (lat < ?) and (lng > ?) and (lng < ?) and (alt > ?)'
             cur.execute(query, (selat, nwlat, nwlng, selng, elev))
             slist = []
             res = make_response(worldwide, gsifl, cur.fetchall())
@@ -157,7 +141,7 @@ def sotasummit(path, options):
         if not ambg:
             return {'errors': 'ambg parameter not found'}
         codep = ambg.upper()
-        if '/' in codep:
+        if '/' in codep or '-' in codep:
             if codep.startswith('JA'):
                 options['code'] = ambg
                 return sotasummit_region(False, options)
@@ -165,7 +149,8 @@ def sotasummit(path, options):
                 options['code'] = ambg
                 return sotasummit_region(True, options)
         else:
-            if ambg.encode('utf-8').isalnum():
+            s = ambg.replace('"','')
+            if s.encode('utf-8').isalnum():
                 options['name'] = ambg
                 return sotasummit_region(True, options)
             else:

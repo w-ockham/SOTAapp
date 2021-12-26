@@ -116,20 +116,7 @@ def gsi_rev_geocoder(lat, lng, elev):
                 r = {'pref': '', 'addr2': '', 'addr1': '', 'type': 'JCC',
                      'jcc':':Unkown', 'jcc_text':''
                 }
-            if elev:
-                r_get = requests.get(elev_uri)
-                if r_get.status_code == 200:
-                    res = r_get.json()
-                    if res:
-                        r['elevation'] = res['elevation']
-                        r['hsrc'] = res['hsrc']
             r['maidenhead'] = gl
-            r['errors'] = 'OK'
-            return r
-        else:
-            r = {'pref': '', 'addr2': '', 'addr1': '', 'type': 'JCC',
-                 'jcc':':Unkown', 'jcc_text':''
-            }
             if elev:
                 r_get = requests.get(elev_uri)
                 if r_get.status_code == 200:
@@ -137,12 +124,19 @@ def gsi_rev_geocoder(lat, lng, elev):
                     if res:
                         r['elevation'] = res['elevation']
                         r['hsrc'] = res['hsrc']
-                        r['maidenhead'] = gl
-                        r['errors'] = 'OK'
+                        if r['elevation']=='-----':
+                            r['errors'] = 'OUTSIDE_JA'
+                        else:
+                            r['errors'] = 'OK'
                         return r
-            raise Exception
+                raise Exception
+            else:
+                r['errors'] = 'OK'
+                return r
+        raise Exception
     except Exception as err:
-        return {'errors': 'parameter out of range'}
+        print(err)
+        return {'errors': 'Parameter out of range'}
 
 
 def gsi_rev_geocoder_list(coords, elev):
@@ -167,7 +161,7 @@ def sota_to_geojson(x):
                 'elevation':float(x['elev']),
                 'address':x['desc_j']}})
 
-from sotasummit import sotasummit
+#from sotasummit import sotasummit
 
 def gsi_geocoder(query, elev, revquery):
     try:
@@ -233,7 +227,7 @@ def gsi_geocoder_vue(query, elev, revquery):
     return(rslt)
 if __name__ == "__main__":
    print(gsi_rev_geocoder_list([
-       ['35.754976', '138.232899'],
+       ['55.754976', '138.232899'],
         ['35.754976', '138.232899']], True))
 #    data = gsi_geocoder_vue('aa', True, False)
 #    print(json.dumps(data, ensure_ascii=False, indent=2))
