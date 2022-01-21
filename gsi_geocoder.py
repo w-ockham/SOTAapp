@@ -3,8 +3,9 @@ import maidenhead as mh
 import re
 import requests
 import sqlite3
+import urllib
 
-gsi_endpoint = {
+endpoint = {
     'geocode':
     'https://msearch.gsi.go.jp/address-search/AddressSearch',
 
@@ -12,9 +13,11 @@ gsi_endpoint = {
     'https://mreversegeocoder.gsi.go.jp/reverse-geocoder/LonLatToAddress',
 
     'elevation':
-    'https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php'
-}
+    'https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php',
 
+    'radiousage':
+    'https://www.tele.soumu.go.jp/musen/list?ST=1&OW=AT&OF=2&DA=0&SC=0&DC=1&MA='
+}
 
 def lookup_muniCode(m):
     conn = sqlite3.connect('database/munitable.db')
@@ -94,14 +97,52 @@ def lookup_jcc_jcg(q):
         conn.close()
         return []
 
+def addr2coord(addr):
+    try:
+        if not addr:
+            raise Exception
+        gsi_uri = endpoint['geocode'] + '?q=' + urllib.parse.quote(addr)
+        r_get = requests.get(gsi_uri)
+        if r_get.status_code == 200:
+            res = r_get.json()
+            lnglat = res[0]['geometry']['coordinates']
+            gl = mh.to_maiden(float(lnglat[1]), float(lnglat[0]),precision=4)
+            return (lnglat , gl)
+    except Exception as err:
+        return ([0,0], '')
+
+def radio_station_qth(callsign, code):
+    try:
+        if not callsign:
+            raise Exception
+        usage_uri = endpoint['radiousage'] + callsign.upper()
+        r_get = requests.get(usage_uri)
+        if r_get.status_code == 200:
+            res = r_get.json()
+            if res['musenInformation']['totalCount'] != '0':
+                rslt = []
+                for st in res['musen']:
+                    addr = st['listInfo']['tdfkCd']
+                    (lnglat,gl) = addr2coord(addr)
+                    if code:
+                        res = gsi_rev_geocoder(lnglat[1], lnglat[0], False)
+                        rslt.append({ 'callsign':callsign.upper() , 'coordinates': lnglat , 'maidenhead':gl, 'addr' :res}) 
+                    else:
+                        rslt.append({ 'callsign':callsign.upper() , 'coordinates': lnglat , 'maidenhead':gl, 'addr': addr })
+                return { 'stations': rslt , 'errors': None }
+            else:
+                return { 'errors': 'Station not found'}
+    except Exception as err:
+        print(err)
+        return {'errors': 'Parameter out of range'}
 
 def gsi_rev_geocoder(lat, lng, elev):
     try:
         if not lat or not lng:
             raise Exception
         pos = '?lat=' + str(lat) + '&lon=' + str(lng)
-        rev_uri = gsi_endpoint['revgeocode'] + pos
-        elev_uri = gsi_endpoint['elevation'] + pos + '&outtype=JSON'
+        rev_uri = endpoint['revgeocode'] + pos
+        elev_uri = endpoint['elevation'] + pos + '&outtype=JSON'
 
         gl = mh.to_maiden(float(lat), float(lng),precision=4)
         
@@ -186,7 +227,7 @@ def gsi_geocoder(query, elev, revquery):
             res2 = lookup_jcc_jcg(query)
 
             if revquery:
-                geo_uri = gsi_endpoint['geocode'] + '?q=' + query
+                geo_uri = endpoint['geocode'] + '?q=' + query
                 r_get = requests.get(geo_uri)
                 if r_get.status_code == 200:
                     res = r_get.json()
@@ -225,10 +266,12 @@ def gsi_geocoder_vue(query, elev, revquery):
             'elevation':elev
             })
     return(rslt)
+
 if __name__ == "__main__":
-   print(gsi_rev_geocoder_list([
-       ['55.754976', '138.232899'],
-        ['35.754976', '138.232899']], True))
+    print(radio_station_qth('jl1nie'))
+#    print(gsi_rev_geocoder_list([
+#       ['55.754976', '138.232899'],
+#        ['35.754976', '138.232899']], True))
 #    data = gsi_geocoder_vue('aa', True, False)
 #    print(json.dumps(data, ensure_ascii=False, indent=2))
 #data = gsi_geocoder_vue('JA/NN-001', True, False)

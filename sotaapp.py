@@ -7,7 +7,7 @@ from flask_compress import Compress
 
 import json
 
-from gsi_geocoder import gsi_geocoder, gsi_rev_geocoder, gsi_geocoder_vue
+from gsi_geocoder import gsi_geocoder, gsi_rev_geocoder, gsi_geocoder_vue, radio_station_qth
 from aprs_tracklog import aprs_track_stations, aprs_track_tracks
 from sotasummit import sotasummit
 from sotaalerts import sotaalerts, sotaspots, sotaalerts_and_spots
@@ -25,12 +25,23 @@ def LonLatAddress():
     res = gsi_rev_geocoder(lat, lng, False)
     return(json.dumps(res))
 
-
 @app.route("/api/reverse-geocoder/LonLatToAddressElev")
 def LonLatAddressElev():
     lat = request.args.get('lat')
     lng = request.args.get('lon')
     res = gsi_rev_geocoder(lat, lng, True)
+    return(json.dumps(res))
+
+@app.route("/api/radio-station/callToQTH")
+def callToQTH():
+    callsign = request.args.get('call')
+    res = radio_station_qth(callsign, False)
+    return(json.dumps(res))
+
+@app.route("/api/radio-station/callToQTHwithCode")
+def callToQTHwithCode():
+    callsign = request.args.get('call')
+    res = radio_station_qth(callsign, True)
     return(json.dumps(res))
 
 @app.route("/api/jcc-jcg-search",methods=['POST','GET'])
@@ -119,15 +130,12 @@ def SOTAlerts():
     res = sotaalerts(None, None, fm, to)
     return(json.dumps(res))
 
-
-
 @app.route("/api/sotaspots/summits/<string:code_prefix>")
 def SOTASpotsSummit(code_prefix):
     mode = request.args.get('mode')
     to = request.args.get('to')
     res = sotaspots(code_prefix, None, mode, to)
     return(json.dumps(res))
-
 
 @app.route("/api/sotaspots/continent/<string:continent>")
 def SOTASpotsContinent(continent):
@@ -136,14 +144,12 @@ def SOTASpotsContinent(continent):
     res = sotaspots(None, mode, continent.split(','), to)
     return(json.dumps(res))
 
-
 @app.route("/api/sotaspots")
 def SOTASpots():
     mode = request.args.get('mode')
     to = request.args.get('to')
     res = sotaspots(None, mode, None, to)
     return(json.dumps(res))
-
 
 @app.route("/api/sota-alerts-spots/summits/<string:code_prefix>")
 def SOTAAlertsSpotsSummit(code_prefix):
@@ -153,7 +159,6 @@ def SOTAAlertsSpotsSummit(code_prefix):
     res = sotaalerts_and_spots(code_prefix, mode, None, fm, to)
     return(json.dumps(res))
 
-
 @app.route("/api/sota-alerts-spots/continent/<string:continent>")
 def SOTAAlertsSpotsContinent(continent):
     mode = request.args.get('mode')
@@ -162,7 +167,6 @@ def SOTAAlertsSpotsContinent(continent):
     res = sotaalerts_and_spots(None, mode, continent.split(','), fm, to)
     return(json.dumps(res))
 
-
 @app.route("/api/sota-alerts-spots")
 def SOTAAlertsSpots():
     mode = request.args.get('mode')
@@ -170,7 +174,6 @@ def SOTAAlertsSpots():
     to = request.args.get('to')
     res = sotaalerts_and_spots(None, mode, None, fm, to)
     return(json.dumps(res))
-
 
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0',port = 5000)
