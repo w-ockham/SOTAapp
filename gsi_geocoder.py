@@ -129,7 +129,7 @@ def radio_station_qth(callsign, code):
                         rslt.append({ 'callsign':callsign.upper() , 'coordinates': lnglat , 'maidenhead':gl, 'addr' :res}) 
                     else:
                         rslt.append({ 'callsign':callsign.upper() , 'coordinates': lnglat , 'maidenhead':gl, 'addr': addr })
-                return { 'stations': rslt , 'errors': None }
+                return { 'stations': rslt , 'errors': 'OK'}
             else:
                 return { 'errors': 'Station not found'}
     except Exception as err:
