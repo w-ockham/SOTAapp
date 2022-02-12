@@ -32,14 +32,14 @@ def LonLatAddressElev():
     res = gsi_rev_geocoder(lat, lng, True)
     return(json.dumps(res))
 
-@app.route("/api/radio-station/callToQTH")
-def callToQTH():
+@app.route("/api/radio-station/qth")
+def CallToQTH():
     callsign = request.args.get('call')
     res = radio_station_qth(callsign, False)
     return(json.dumps(res))
 
-@app.route("/api/radio-station/callToQTHwithCode")
-def callToQTHwithCode():
+@app.route("/api/radio-station/qth_code")
+def CallToQTHwithCode():
     callsign = request.args.get('call')
     res = radio_station_qth(callsign, True)
     return(json.dumps(res))
@@ -94,6 +94,7 @@ def SOTAsummits(region):
     lat2 = request.args.get('lat2')
     lng2 = request.args.get('lon2')
     rng = request.args.get('range')
+    park= request.args.get('park')
     elev = request.args.get('elevation')
     flag = request.args.get('flag')
     res = sotasummit(region,
@@ -103,6 +104,7 @@ def SOTAsummits(region):
                       'flag':flag,
                       'lat':lat,'lon':lng,
                       'lat2':lat2,'lon2':lng2,
+                      'park':park,
                       'elevation':elev,
                       'range':rng})
     return(json.dumps(res))

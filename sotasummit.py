@@ -6,6 +6,29 @@ from gsi_geocoder import gsi_rev_geocoder
 
 grs80 = pyproj.Geod(ellps='GRS80')
 
+
+def searchPark(selat, nwlat, nwlng, selng, level):
+    conn = sqlite3.connect('database/jaffpota.db')
+    cur = conn.cursor()
+    query = 'select * from jaffpota where (lat > ?) and (lat < ?) and (lng > ?) and (lng < ?) and (level <= ?)'
+    cur.execute(query, (selat, nwlat, nwlng, selng, level))
+    res = []
+    for r in cur.fetchall():
+        (pota, jaff, name, loc, locid, ty, lv, name_k, lat ,lng) = r
+        res.append({
+            'pota': pota,
+            'jaff': jaff,
+            'name': name,
+            'location': loc,
+            'locid':locid,
+            'type': ty,
+            'lv':lv,
+            'name_k':name_k,
+            'lat': lat,
+            'lon': lng
+            })
+    return res
+
 def make_response(worldwide, flag, slist):
     res = []
 
@@ -119,13 +142,23 @@ def sotasummit_region(worldwide, options):
             slist = []
             res = make_response(worldwide, gsifl, cur.fetchall())
             conn.close()
-            if res:
-                return {'errors': 'OK', 'summits': res}
+            
+            if options['park']:
+                park = searchPark(selat, nwlat, nwlng, selng, int(options['park']))
             else:
-                return {'errors': 'No summits.'}
+                park = []
+                
+            if res:
+                return {'errors': 'OK', 'summits': res, 'parks':park}
+            else:
+                if park:
+                    return {'errors': 'OK', 'summits': [], 'parks':park}
+                else:
+                    return {'errors': 'No summits.'}
 
     except Exception as err:
         conn.close()
+        print('Error:')
         print(err)
         return {'errors': 'parameter out of range'}
 
@@ -160,17 +193,18 @@ def sotasummit(path, options):
 
 if __name__ == "__main__":
     options = {
-        'ambg': '仏',
+        'ambg': 'a',
         'code': None,
         'name': None,
         'flag':'0',
         'lat':'35.754976', 'lon':'138.232899',
-        #'lat2':'34.754976', 'lon2':'140.232899',
+#        'lat2':'34.754976', 'lon2':'139.232899',
         'lat2':None, 'lon2':'140.232899',
         'elevation':'2300',
-        'range':'10'}
+        'range':'100',
+        'park':'2'}
     
-    print(sotasummit('all', options))
+    print(sotasummit('ja', options))
 #    print(sotasummit('ww', 'HB/GR-088', None))
 #    print(sotasummit('ja', None, None, '35.754976', '138.232899'))
 #    print(sotasummit('WW', None, None, '35.754976', '138.232899'))

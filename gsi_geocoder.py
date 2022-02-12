@@ -28,7 +28,7 @@ def lookup_muniCode(m):
         cur.execute(query, (m, ))
         r = cur.fetchone()
         if r:
-            (_, pref, city, jcc, wdcd, jcc_text, jcg, jcg_text) = r
+            (_, pref, city, jcc, wdcd, jcc_text, jcg, jcg_text, hamlog) = r
             ty = 'JCC'
             city = re.sub(r'(.+)\(.+\)', r'\1', city)
             jcc_text = re.sub(r'(.+)\(.+\)', r'\1', jcc_text)
@@ -51,7 +51,7 @@ def lookup_muniCode(m):
                     }
         else:
             res = {'pref': pref, 'addr2': city, 'addr1': '', 'type': ty,
-                   'jcg': jcg, 'jcg_text': jcg_text
+                   'jcg': jcg, 'jcg_text': jcg_text, 'hamlog':hamlog
                    }
 
         return res
@@ -76,13 +76,13 @@ def lookup_jcc_jcg(q):
         rslt = []
         res = cur.fetchall()
         for i in res:
-            (_, pref, city, jcc, wdcd, jcc_text, jcg, jcg_text) = i
+            (_, pref, city, jcc, wdcd, jcc_text, jcg, jcg_text, hamlog) = i
             ty = 'JCC'
             city = re.sub(r'(.+)\(.+\)', r'\1', city)
             jcc_text = re.sub(r'(.+)\(.+\)', r'\1', jcc_text)
             if jcg != '':
                 city = pref + jcg_text + city
-                code_t = 'JCG#' + jcg
+                code_t = 'JCG#' + jcg + hamlog
                 title = jcg_text
             else:
                 city = pref + city
