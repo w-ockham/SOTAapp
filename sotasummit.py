@@ -10,7 +10,7 @@ grs80 = pyproj.Geod(ellps='GRS80')
 def searchPark(selat, nwlat, nwlng, selng, level):
     conn = sqlite3.connect('database/jaffpota.db')
     cur = conn.cursor()
-    query = 'select * from jaffpota where (lat > ?) and (lat < ?) and (lng > ?) and (lng < ?) and (level <= ?)'
+    query = 'select * from jaffpota where (lat > ?) and (lat < ?) and (lng > ?) and (lng < ?) and (level >= ?)'
     cur.execute(query, (selat, nwlat, nwlng, selng, level))
     res = []
     for r in cur.fetchall():
