@@ -9,7 +9,7 @@ import json
 
 from gsi_geocoder import gsi_geocoder, gsi_rev_geocoder, gsi_geocoder_vue, radio_station_qth
 from aprs_tracklog import aprs_track_stations, aprs_track_tracks
-from sotasummit import sotasummit
+from sotasummit import sotasummit,jaffpota_parks
 from sotaalerts import sotaalerts, sotaspots, sotaalerts_and_spots
 
 app = Flask(__name__)
@@ -83,6 +83,20 @@ def SOTAliveFile(filename):
     except Exception as e:
         print(e)
         return(json.dumps({'Error':'internal error'}))
+
+@app.route("/api/jaff-pota")
+def JaffpotaParks():
+    parkid = request.args.get('parkid')
+    lat = request.args.get('lat')
+    lng = request.args.get('lon')
+    lat2 = request.args.get('lat2')
+    lng2 = request.args.get('lon2')
+    size= request.args.get('size')
+    res = jaffpota_parks({'parkid': parkid,
+                          'lat':lat,'lon':lng,
+                          'lat2':lat2,'lon2':lng2,
+                          'size':size})
+    return(json.dumps(res))
 
 @app.route("/api/sotasummits/<string:region>")
 def SOTAsummits(region):
