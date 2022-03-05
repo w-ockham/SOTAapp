@@ -29,10 +29,13 @@ def searchParkLoc(selat, nwlat, nwlng, selng, level):
             })
     return res
 
-def searchParkId(parkid):
+def searchParkId(parkid,isName = False):
     conn = sqlite3.connect('database/jaffpota.db')
     cur = conn.cursor()
-    query = f"select * from jaffpota where pota like '%{parkid}%' or jaff like '%{parkid}%'"
+    if isName:
+        query = f"select * from jaffpota where namek like '%{parkid}%'"
+    else:
+        query = f"select * from jaffpota where pota like '%{parkid}%' or jaff like '%{parkid}%'"
     cur.execute(query)
     res = []
     for r in cur.fetchall():
@@ -71,10 +74,13 @@ def jaffpota_parks(options):
 
     return res
 
-def searchSummitId(refid):
+def searchSummitId(refid,isName = False):
     conn = sqlite3.connect('database/summits.db')
     cur = conn.cursor()
-    query = f"select * from summits where assoc like 'Japan%' and code like '%{refid}%' "
+    if isName:
+        query = f"select * from summits where assoc like 'Japan%' and name_k like '%{refid}%' "
+    else:
+        query = f"select * from summits where assoc like 'Japan%' and code like '%{refid}%' "
     cur.execute(query)
     res = []
     for r in cur.fetchall():
@@ -102,9 +108,13 @@ def sotajaffpota_ref(options):
         res = searchParkId(refid)
     elif msota:
         res = searchSummitId(refid)
-    else:
+    elif refid.isascii():
+        
         res  = searchParkId(refid)
         res += searchSummitId(refid)
+    else:
+        res  = searchParkId(refid, True)
+        res += searchSummitId(refid, True)
 
     return {'counts': len(res), 'reference': res }
 
@@ -286,7 +296,7 @@ if __name__ == "__main__":
         'elevation':None,
         #        'range':'100',
         'park':'2',
-        'refid':'0008'
+        'refid':'武甲'
     }
     #    print(searchParkId('JAFF-0196'))
     #    print(searchParkId('JA-0014'))
