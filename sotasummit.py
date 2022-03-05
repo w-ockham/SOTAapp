@@ -32,12 +32,20 @@ def searchParkLoc(selat, nwlat, nwlng, selng, level):
 def searchParkId(parkid):
     conn = sqlite3.connect('database/jaffpota.db')
     cur = conn.cursor()
-    query = 'select * from jaffpota where pota == ? or jaff == ?'
-    cur.execute(query,(parkid,parkid))
+    query = f"select * from jaffpota where pota like '%{parkid}%' or jaff like '%{parkid}%'"
+    cur.execute(query)
     res = []
     for r in cur.fetchall():
         (pota, jaff, name, loc, locid, ty, lv, name_k, lat ,lng) = r
+        code = None
+        if pota != '':
+            code = pota
+        if code and jaff != '':
+            code += '/' + jaff
+        elif jaff != '':
+            code = jaff
         res.append({
+            'code': code,
             'pota': pota,
             'jaff': jaff,
             'name': name,
@@ -49,6 +57,7 @@ def searchParkId(parkid):
             'lat': lat,
             'lon': lng
             })
+    conn.close()
     return res
 
 def jaffpota_parks(options):
@@ -61,6 +70,43 @@ def jaffpota_parks(options):
         res = searchParkId(parkid.upper())
 
     return res
+
+def searchSummitId(refid):
+    conn = sqlite3.connect('database/summits.db')
+    cur = conn.cursor()
+    query = f"select * from summits where assoc like 'Japan%' and code like '%{refid}%' "
+    cur.execute(query)
+    res = []
+    for r in cur.fetchall():
+        (summit, lat, lng, pts, bonus, elev, name, name_k, desc, desc_k, _, _, actcnt, lastact, lastcall) =r
+        res.append({
+            'code': summit,
+            'name': name,
+            'name_k':name_k,
+            'lat': lat,
+            'lon': lng
+            })
+    conn.close()
+    return res
+
+def sotajaffpota_ref(options):
+    refid = options['refid']
+    if not refid:
+        return {'counts':0, 'reference':[]}
+
+    refid = refid.upper()
+    msota = re.search(r'\w\w-\d+', refid)
+    mpota = re.search(r'\d\d\d\d', refid)
+
+    if 'JA-' in refid or 'JAFF-' in refid or mpota:
+        res = searchParkId(refid)
+    elif msota:
+        res = searchSummitId(refid)
+    else:
+        res  = searchParkId(refid)
+        res += searchSummitId(refid)
+
+    return {'counts': len(res), 'reference': res }
 
 def make_response(worldwide, flag, slist):
     res = []
@@ -230,25 +276,26 @@ if __name__ == "__main__":
         'code': None,
         'name': None,
         'flag':'0',
-#        'lat':'35.754976', 'lon':'138.232899',
-#       'lat2':'34.754976', 'lon2':'139.232899',
-#        'lat2':None, 'lon2':'140.232899',
+        #        'lat':'35.754976', 'lon':'138.232899',
+        #       'lat2':'34.754976', 'lon2':'139.232899',
+        #        'lat2':None, 'lon2':'140.232899',
         'lat2':'34.0',
         'lat':'36.0',
         'lon':'133.0',
         'lon2':'134.0',
         'elevation':None,
-#        'range':'100',
-        'park':'2'
+        #        'range':'100',
+        'park':'2',
+        'refid':'0008'
     }
-#    print(searchParkId('JAFF-0196'))
-#    print(searchParkId('JA-0014'))
-#    print(searchParkLoc('34.0','36.0','133.0','134.0',0))
-    print(sotasummit('ja', options))
-#    print(sotasummit('ww', 'HB/GR-088', None))
-#    print(sotasummit('ja', None, None, '35.754976', '138.232899'))
-#    print(sotasummit('WW', None, None, '35.754976', '138.232899'))
-#    print(sotasummit('ww', None, None, '45.8325', '6.8644', '3'))
-#    print(sotasummit('ja', None, '槍'))
-#    print(sotasummit('ww', None, 'Gun'))
-#    print(sotasummit('ja', options))
+    #    print(searchParkId('JAFF-0196'))
+    #    print(searchParkId('JA-0014'))
+    #    print(searchParkLoc('34.0','36.0','133.0','134.0',0))
+    print(sotajaffpota_ref(options))
+    #    print(sotasummit('ww', 'HB/GR-088', None))
+    #    print(sotasummit('ja', None, None, '35.754976', '138.232899'))
+    #    print(sotasummit('WW', None, None, '35.754976', '138.232899'))
+    #    print(sotasummit('ww', None, None, '45.8325', '6.8644', '3'))
+    #    print(sotasummit('ja', None, '槍'))
+    #    print(sotasummit('ww', None, 'Gun'))
+    #    print(sotasummit('ja', options))

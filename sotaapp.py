@@ -9,7 +9,7 @@ import json
 
 from gsi_geocoder import gsi_geocoder, gsi_rev_geocoder, gsi_geocoder_vue, radio_station_qth
 from aprs_tracklog import aprs_track_stations, aprs_track_tracks
-from sotasummit import sotasummit,jaffpota_parks
+from sotasummit import sotasummit,jaffpota_parks, sotajaffpota_ref
 from sotaalerts import sotaalerts, sotaspots, sotaalerts_and_spots
 
 app = Flask(__name__)
@@ -96,6 +96,12 @@ def JaffpotaParks():
                           'lat':lat,'lon':lng,
                           'lat2':lat2,'lon2':lng2,
                           'size':size})
+    return(json.dumps(res))
+
+@app.route("/api/sota-jaff-pota")
+def SOTAJAFFPOTAParks():
+    refid = request.args.get('refid')
+    res = sotajaffpota_ref({'refid': refid})
     return(json.dumps(res))
 
 @app.route("/api/sotasummits/<string:region>")
