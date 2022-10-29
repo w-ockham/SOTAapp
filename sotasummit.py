@@ -7,8 +7,16 @@ from gsi_geocoder import gsi_rev_geocoder
 grs80 = pyproj.Geod(ellps='GRS80')
 
 
-def searchParkLoc(selat, nwlat, nwlng, selng, level):
-    conn = sqlite3.connect('database/jaffpota.db')
+def searchParkLoc(selat, nwlat, nwlng, selng, options):
+    level = int(options['park'])
+    
+    if options['potadb']:
+        dbname = 'database/jaffpota.db-new'
+    else:
+        dbname = 'database/jaffpota.db'
+
+    conn = sqlite3.connect(dbname)
+        
     cur = conn.cursor()
     query = 'select * from jaffpota where (lat > ?) and (lat < ?) and (lng > ?) and (lng < ?) and (level >= ?)'
     cur.execute(query, (selat, nwlat, nwlng, selng, level))
@@ -41,11 +49,11 @@ def searchParkId(parkid,isName = False):
     for r in cur.fetchall():
         (pota, jaff, name, loc, locid, ty, lv, name_k, lat ,lng) = r
         code = None
-        if pota != '':
+        if pota:
             code = pota
-        if code and jaff != '':
+        if code and jaff:
             code += '/' + jaff
-        elif jaff != '':
+        elif jaff:
             code = jaff
         res.append({
             'code': code,
@@ -211,12 +219,15 @@ def sotasummit_region(worldwide, options):
                 selat, selng = float(options['lat2']), float(options['lon2'])
             else:
                 if not options['range']:
-                    rng = 10000
+                    if not options['srange']:
+                        rng = 10000
+                    else:
+                        rng = int(options['srange'])
+                        print(rng)
                 else:
                     rng = int(options['range']) * 1000
-
-                if rng > 30000:
-                    rng = 30000
+                    if rng > 30000:
+                        rng = 30000
                     
                 nwlng, nwlat, _ = grs80.fwd(lng, lat, -45.0, rng)
                 selng, selat, _ = grs80.fwd(lng, lat, 135.0, rng)
@@ -233,7 +244,7 @@ def sotasummit_region(worldwide, options):
             conn.close()
             
             if options['park']:
-                park = searchParkLoc(selat, nwlat, nwlng, selng, int(options['park']))
+                park = searchParkLoc(selat, nwlat, nwlng, selng, options)
             else:
                 park = []
                 
@@ -282,30 +293,33 @@ def sotasummit(path, options):
 
 if __name__ == "__main__":
     options = {
-        'ambg': 'a',
+        #'ambg': 'a',
         'code': None,
         'name': None,
         'flag':'0',
         #        'lat':'35.754976', 'lon':'138.232899',
         #       'lat2':'34.754976', 'lon2':'139.232899',
         #        'lat2':None, 'lon2':'140.232899',
-        'lat2':'34.0',
-        'lat':'36.0',
-        'lon':'133.0',
-        'lon2':'134.0',
+        'lat2':None,
+        'lat':'35.918529',
+        'lon':'138.522105',
+        'lon2':None,
         'elevation':None,
-        #        'range':'100',
-        'park':'2',
-        'refid':'武甲'
+        'range':None,
+        'srange':'300',
+        'park': None,
+        #'refid':'1892',
+        #'potadb':1
     }
     #    print(searchParkId('JAFF-0196'))
     #    print(searchParkId('JA-0014'))
     #    print(searchParkLoc('34.0','36.0','133.0','134.0',0))
-    print(sotajaffpota_ref(options))
+    #print(sotajaffpota_ref(options))
     #    print(sotasummit('ww', 'HB/GR-088', None))
     #    print(sotasummit('ja', None, None, '35.754976', '138.232899'))
     #    print(sotasummit('WW', None, None, '35.754976', '138.232899'))
     #    print(sotasummit('ww', None, None, '45.8325', '6.8644', '3'))
     #    print(sotasummit('ja', None, '槍'))
     #    print(sotasummit('ww', None, 'Gun'))
-    #    print(sotasummit('ja', options))
+    print(sotasummit('ja', options))
+

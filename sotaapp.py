@@ -11,6 +11,7 @@ from gsi_geocoder import gsi_geocoder, gsi_rev_geocoder, gsi_geocoder_vue, radio
 from aprs_tracklog import aprs_track_stations, aprs_track_tracks
 from sotasummit import sotasummit,jaffpota_parks, sotajaffpota_ref
 from sotaalerts import sotaalerts, sotaspots, sotaalerts_and_spots
+from geomag import kp_indicies
 
 app = Flask(__name__)
 #app.config["COMPRESS_REGISTER"] = False
@@ -114,9 +115,11 @@ def SOTAsummits(region):
     lat2 = request.args.get('lat2')
     lng2 = request.args.get('lon2')
     rng = request.args.get('range')
+    srng = request.args.get('srange')
     park= request.args.get('park')
     elev = request.args.get('elevation')
     flag = request.args.get('flag')
+    potadb = request.args.get('potadb')
     res = sotasummit(region,
                      {'code': code,
                       'name': name,
@@ -125,8 +128,10 @@ def SOTAsummits(region):
                       'lat':lat,'lon':lng,
                       'lat2':lat2,'lon2':lng2,
                       'park':park,
+                      'potadb':potadb,
                       'elevation':elev,
-                      'range':rng})
+                      'range':rng,
+                      'srange':srng})
     return(json.dumps(res))
 
 @app.route("/api/sotaalerts/summits/<string:code_prefix>")
@@ -195,6 +200,11 @@ def SOTAAlertsSpots():
     fm = request.args.get('from')
     to = request.args.get('to')
     res = sotaalerts_and_spots(None, mode, None, fm, to)
+    return(json.dumps(res))
+
+@app.route("/api/geomag")
+def GeoMag():
+    res = kp_indicies()
     return(json.dumps(res))
 
 if __name__ == "__main__":
