@@ -16,7 +16,10 @@ endpoint = {
     'https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php',
 
     'radiousage':
-    'https://www.tele.soumu.go.jp/musen/list?ST=1&OW=AT&OF=2&DA=0&SC=0&DC=1&MA='
+    'https://www.tele.soumu.go.jp/musen/list?ST=1&OW=AT&OF=2&DA=0&SC=0&DC=1&MA=',
+
+    'mapcode':
+    'https://www.drivenippon.com/mapcode/app/dn/navicon_start.php',
 }
 
 def lookup_muniCode(m):
@@ -119,7 +122,7 @@ def addr2coord(addr):
     except Exception as err:
         return ([0,0], '')
 
-def radio_station_qth(callsign, code):
+def radio_station_qth(callsign, reverse = True):
     try:
         if not callsign:
             raise Exception
@@ -144,7 +147,7 @@ def radio_station_qth(callsign, code):
         print(err)
         return {'errors': 'Parameter out of range'}
 
-def gsi_rev_geocoder(lat, lng, elev):
+def gsi_rev_geocoder(lat, lng, elev = False, mapcode = False):
     try:
         if not lat or not lng:
             raise Exception
@@ -166,6 +169,10 @@ def gsi_rev_geocoder(lat, lng, elev):
                      'jcc':':Unkown', 'jcc_text':''
                 }
             r['maidenhead'] = gl
+
+            if mapcode:
+                r['mapcode'] = get_mapcode(lat, lng)
+                
             if elev:
                 r_get = requests.get(elev_uri)
                 if r_get.status_code == 200:
@@ -178,7 +185,7 @@ def gsi_rev_geocoder(lat, lng, elev):
                         else:
                             r['errors'] = 'OK'
                         return r
-                raise Exception
+                    raise Exception
             else:
                 r['errors'] = 'OK'
                 return r
@@ -187,16 +194,28 @@ def gsi_rev_geocoder(lat, lng, elev):
         print(err)
         return {'errors': 'Parameter out of range'}
 
+def get_mapcode(lat, lng):
+    try:
+        if not lat or not lng:
+            raise Exception
+        pos = {'lat' : str(lat) ,'lng': str(lng)}
+        r_get = requests.post(endpoint['mapcode'], data=pos)
+        if r_get.status_code == 200:
+            for m in re.finditer(r'.+id="mapcode">(.+)<', r_get.text, re.MULTILINE):
+                return m.group(1)
+
+            return ''
+        return ''
+    except Exception as err:
+        print(err)
+        return ''
 
 def gsi_rev_geocoder_list(coords, elev):
-#    try:
-        res = []
-        for latlng in coords:
-            res.append(gsi_rev_geocoder(latlng[0], latlng[1], elev))
-
-        return res
-#    except Exception as err:
-#        return {'errors': 'parameter out of range'}
+    res = []
+    for latlng in coords:
+        res.append(gsi_rev_geocoder(latlng[0], latlng[1], elev))
+        
+    return res
 
 def sota_to_geojson(x):
     return ({'geometry':{
@@ -276,7 +295,8 @@ def gsi_geocoder_vue(query, elev, revquery):
     return(rslt)
 
 if __name__ == "__main__":
-    print(radio_station_qth('jl1nie'))
+    print(gsi_rev_geocoder(35.595247, 139.517828, True, True))
+#    print(radio_station_qth('jl1nie'))
 #    print(gsi_rev_geocoder_list([
 #       ['55.754976', '138.232899'],
 #        ['35.754976', '138.232899']], True))

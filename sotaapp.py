@@ -23,7 +23,7 @@ CORS(app, resources={r"/api": {"origins":"*"}})
 def LonLatAddress():
     lat = request.args.get('lat')
     lng = request.args.get('lon')
-    res = gsi_rev_geocoder(lat, lng, False)
+    res = gsi_rev_geocoder(lat, lng)
     return(json.dumps(res))
 
 @app.route("/api/reverse-geocoder/LonLatToAddressElev")
@@ -31,6 +31,13 @@ def LonLatAddressElev():
     lat = request.args.get('lat')
     lng = request.args.get('lon')
     res = gsi_rev_geocoder(lat, lng, True)
+    return(json.dumps(res))
+
+@app.route("/api/reverse-geocoder/LonLatToAddressElevMapCode")
+def LonLatAddressElevMapCode():
+    lat = request.args.get('lat')
+    lng = request.args.get('lon')
+    res = gsi_rev_geocoder(lat, lng, True, True)
     return(json.dumps(res))
 
 @app.route("/api/radio-station/qth")
