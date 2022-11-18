@@ -1,4 +1,5 @@
 import datetime
+import fcntl
 import json
 import os
 import re
@@ -30,7 +31,7 @@ def update_geomagdb(ep, db):
     with open(db, mode='rb') as f:
         geomagdb = pickle.load(f)
     
-    if (now - geomagdb['LastUpdate']) < 3600 * 3:
+    if (now - geomagdb['LastUpdate']) < 1800:
         return geomagdb
     
     geomagdb['LastUpdate'] = now
@@ -45,27 +46,32 @@ def update_geomagdb(ep, db):
     dt = list(map(lambda x: x[0:10],lines))
     aps = list(map(lambda x: x[60:62],lines))
     kps = list(map(lambda x: x[63:],lines))
+
     if aps[1] == '-1':
         geomagdb['Date'] = dt[0].replace(' ','')
         geomagdb['Ap'] = int(aps[0])
-        data = kps[0]
+        data = kps[0].split()
     else:
         geomagdb['Date'] = dt[1].replace(' ','')
         geomagdb['Ap'] = int(aps[1])
-        data = kps[1]
+        data = kps[1].split()
 
     geomagdb['Kp'] = []
 
-    idx = 0
-    while idx < len(data):
-        lastkp = int(data[idx:idx+2].strip())
+    for kp in data:
+        lastkp = int(float(kp))
         if lastkp >= 0:
             geomagdb['Kp'] = [ lastkp ] + geomagdb['Kp']
-        idx += 2
 
     with open(db, mode='wb') as f:
-        pickle.dump(geomagdb, f)
-
+        try:
+            fcntl.flock(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            pickle.dump(geomagdb, f)
+        except IOError:
+            return geomagdb
+        finally:
+            fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+            
     return geomagdb
     
 def create_geomagdb(ep, db):
