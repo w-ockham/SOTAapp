@@ -4,6 +4,7 @@ import re
 import requests
 import sqlite3
 import urllib
+from areacode import get_areacode
 
 endpoint = {
     'geocode':
@@ -164,6 +165,7 @@ def gsi_rev_geocoder(lat, lng, elev = False, mapcode = False):
                 muni = str(int(res['results']['muniCd']))
                 r = lookup_muniCode(muni)
                 r['addr1'] = res['results']['lv01Nm']
+                r['areacode'] = get_areacode(r['pref'])[:1]
             else:
                 r = {'pref': '', 'addr2': '', 'addr1': '', 'type': 'JCC',
                      'jcc':':Unkown', 'jcc_text':''
@@ -296,6 +298,7 @@ def gsi_geocoder_vue(query, elev, revquery):
 
 if __name__ == "__main__":
     print(gsi_rev_geocoder(35.595247, 139.517828, True, True))
+    print(gsi_rev_geocoder(43.804832, 142.879944, True, True))
 #    print(radio_station_qth('jl1nie'))
 #    print(gsi_rev_geocoder_list([
 #       ['55.754976', '138.232899'],

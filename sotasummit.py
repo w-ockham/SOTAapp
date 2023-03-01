@@ -223,7 +223,6 @@ def sotasummit_region(worldwide, options):
                         rng = 10000
                     else:
                         rng = int(options['srange'])
-                        print(rng)
                 else:
                     rng = int(options['range']) * 1000
                     if rng > 30000:

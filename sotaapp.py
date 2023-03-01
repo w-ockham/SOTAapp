@@ -9,68 +9,77 @@ import json
 
 from gsi_geocoder import gsi_geocoder, gsi_rev_geocoder, gsi_geocoder_vue, radio_station_qth
 from aprs_tracklog import aprs_track_stations, aprs_track_tracks
-from sotasummit import sotasummit,jaffpota_parks, sotajaffpota_ref
+from sotasummit import sotasummit, jaffpota_parks, sotajaffpota_ref
 from sotaalerts import sotaalerts, sotaspots, sotaalerts_and_spots
+from sotakeyer import sotakeyer
 from geomag import kp_indicies
+from nostr_nip05 import nostr_nip05
+from spottimeline import spottimeline
 
 app = Flask(__name__)
-#app.config["COMPRESS_REGISTER"] = False
+# app.config["COMPRESS_REGISTER"] = False
 compress = Compress()
 compress.init_app(app)
-CORS(app, resources={r"/api": {"origins":"*"}})
+CORS(app, resources={r"/api": {"origins": "*"}})
+
 
 @app.route("/api/reverse-geocoder/LonLatToAddress")
 def LonLatAddress():
     lat = request.args.get('lat')
     lng = request.args.get('lon')
     res = gsi_rev_geocoder(lat, lng)
-    return(json.dumps(res))
+    return (json.dumps(res))
+
 
 @app.route("/api/reverse-geocoder/LonLatToAddressElev")
 def LonLatAddressElev():
     lat = request.args.get('lat')
     lng = request.args.get('lon')
     res = gsi_rev_geocoder(lat, lng, True)
-    return(json.dumps(res))
+    return (json.dumps(res))
+
 
 @app.route("/api/reverse-geocoder/LonLatToAddressElevMapCode")
 def LonLatAddressElevMapCode():
     lat = request.args.get('lat')
     lng = request.args.get('lon')
     res = gsi_rev_geocoder(lat, lng, True, True)
-    return(json.dumps(res))
+    return (json.dumps(res))
+
 
 @app.route("/api/radio-station/qth")
 def CallToQTH():
     callsign = request.args.get('call')
     res = radio_station_qth(callsign, False)
-    return(json.dumps(res))
+    return (json.dumps(res))
+
 
 @app.route("/api/radio-station/qth_code")
 def CallToQTHwithCode():
     callsign = request.args.get('call')
     res = radio_station_qth(callsign, True)
-    return(json.dumps(res))
+    return (json.dumps(res))
 
-@app.route("/api/jcc-jcg-search",methods=['POST','GET'])
+
+@app.route("/api/jcc-jcg-search", methods=['POST', 'GET'])
 def JCCJCGGeocoder():
     try:
         if request.method == 'POST':
             q = request.get_json()['q']
         else:
-            q = request.args.get('q','')
+            q = request.args.get('q', '')
         res = gsi_geocoder_vue(q, True, False)
-        return(json.dumps(res))
+        return (json.dumps(res))
     except Exception as err:
         raise err
-        return(json.dumps({'error query': q}))
+        return (json.dumps({'error query': q}))
 
 
 @app.route("/api/aprs-tracklog/stations")
 def AprsTrackLogStations():
     rg = request.args.get('range')
     res = aprs_track_stations(rg)
-    return(json.dumps(res))
+    return (json.dumps(res))
 
 
 @app.route("/api/aprs-tracklog/tracks")
@@ -78,19 +87,21 @@ def AprsTrackLogTracks():
     stn = request.args.get('station')
     rg = request.args.get('range')
     res = aprs_track_tracks(stn, rg)
-    return(json.dumps(res))
+    return (json.dumps(res))
+
 
 @app.route("/api/sotalive-json/<string:filename>")
 def SOTAliveFile(filename):
     path = '/usr/share/nginx/html/json/'
     try:
         with open(path+filename, 'r') as f:
-            return(json.dumps(json.load(f)))
+            return (json.dumps(json.load(f)))
     except FileNotFoundError as e:
-        return(json.dumps({'Error':path+filename+" not found."}))
+        return (json.dumps({'Error': path+filename+" not found."}))
     except Exception as e:
         print(e)
-        return(json.dumps({'Error':'internal error'}))
+        return (json.dumps({'Error': 'internal error'}))
+
 
 @app.route("/api/jaff-pota")
 def JaffpotaParks():
@@ -99,18 +110,32 @@ def JaffpotaParks():
     lng = request.args.get('lon')
     lat2 = request.args.get('lat2')
     lng2 = request.args.get('lon2')
-    size= request.args.get('size')
+    size = request.args.get('size')
     res = jaffpota_parks({'parkid': parkid,
-                          'lat':lat,'lon':lng,
-                          'lat2':lat2,'lon2':lng2,
-                          'size':size})
-    return(json.dumps(res))
+                          'lat': lat, 'lon': lng,
+                          'lat2': lat2, 'lon2': lng2,
+                          'size': size})
+    return (json.dumps(res))
+
 
 @app.route("/api/sota-jaff-pota")
 def SOTAJAFFPOTAParks():
     refid = request.args.get('refid')
     res = sotajaffpota_ref({'refid': refid})
-    return(json.dumps(res))
+    return (json.dumps(res))
+
+
+@app.route("/api/sota-pota-spots")
+def SOTAPOTASpots():
+    region = request.args.get('region')
+    period = request.args.get('period')
+    program = request.args.get('program')
+    bycall = request.args.get('bycall')
+    res = spottimeline(
+        {'region': region, 'period': period,
+         'program': program, 'bycall': bycall})
+    return (json.dumps(res))
+
 
 @app.route("/api/sotasummits/<string:region>")
 def SOTAsummits(region):
@@ -213,6 +238,34 @@ def SOTAAlertsSpots():
 def GeoMag():
     res = kp_indicies()
     return(json.dumps(res))
+
+@app.route("/api/nostr.json")
+def Nostr():
+    name = request.args.get('name')
+    res = nostr_nip05(name)
+    return(json.dumps(res))
+
+@app.route("/api/sotakeyer/")
+def SOTAKeyer():
+    lat = request.args.get('lat')
+    lon = request.args.get('lon')
+    code = request.args.get('code')
+    srange = request.args.get('srange')
+    spot_prefix = request.args.get('spot_prefix')
+    spot_mode = request.args.get('spot_mode')
+    spot_range = request.args.get('spot_range')
+
+    res = sotakeyer({
+        'lat': lat,
+        'lon': lon,
+        'srange': srange,
+        'code': code,
+        'spot_prefix': spot_prefix,
+        'spot_mode': spot_mode,
+        'spot_range': spot_range})
+    
+    return(json.dumps(res))
+
 
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0',port = 5000)

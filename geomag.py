@@ -31,7 +31,7 @@ def update_geomagdb(ep, db):
     with open(db, mode='rb') as f:
         geomagdb = pickle.load(f)
     
-    if (now - geomagdb['LastUpdate']) < 1800:
+    if (now - geomagdb['LastUpdate']) < 600:
         return geomagdb
     
     geomagdb['LastUpdate'] = now
