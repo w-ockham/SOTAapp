@@ -9,7 +9,7 @@ grs80 = pyproj.Geod(ellps='GRS80')
 
 def searchParkLoc(selat, nwlat, nwlng, selng, options):
     level = int(options['park'])
-    
+
     if options['potadb']:
         dbname = 'database/jaffpota.db-new'
     else:
@@ -40,11 +40,13 @@ def searchParkLoc(selat, nwlat, nwlng, selng, options):
 def searchParkId(parkid,isName = False):
     conn = sqlite3.connect('database/jaffpota.db')
     cur = conn.cursor()
+    parkid = '%'+parkid+'%'
     if isName:
-        query = f"select * from jaffpota where namek like '%{parkid}%'"
+        query = f"select * from jaffpota where namek like ?"
+        cur.execute(query,(parkid,))
     else:
-        query = f"select * from jaffpota where pota like '%{parkid}%' or jaff like '%{parkid}%'"
-    cur.execute(query)
+        query = f"select * from jaffpota where pota like ? or jaff like ?"
+        cur.execute(query,(parkid,parkid,))
     res = []
     for r in cur.fetchall():
         (pota, jaff, name, loc, locid, ty, lv, name_k, lat ,lng) = r
@@ -86,10 +88,10 @@ def searchSummitId(refid,isName = False):
     conn = sqlite3.connect('database/summits.db')
     cur = conn.cursor()
     if isName:
-        query = f"select * from summits where assoc like 'Japan%' and name_k like '%{refid}%' "
+        query = f"select * from summits where assoc like 'Japan%' and name_k like ? "
     else:
-        query = f"select * from summits where assoc like 'Japan%' and code like '%{refid}%' "
-    cur.execute(query)
+        query = f"select * from summits where assoc like 'Japan%' and code like ? "
+    cur.execute(query,('%'+refid+'%',))
     res = []
     for r in cur.fetchall():
         (summit, lat, lng, pts, bonus, elev, name, name_k, desc, desc_k, _, _, actcnt, lastact, lastcall) =r
@@ -320,5 +322,5 @@ if __name__ == "__main__":
     #    print(sotasummit('ww', None, None, '45.8325', '6.8644', '3'))
     #    print(sotasummit('ja', None, '槍'))
     #    print(sotasummit('ww', None, 'Gun'))
-    print(sotasummit('ja', options))
-
+    #print(sotasummit('ja', options))
+    print(searchParkId("'0012'"))
