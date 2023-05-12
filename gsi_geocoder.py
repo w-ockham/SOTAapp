@@ -19,9 +19,13 @@ endpoint = {
     'radiousage':
     'https://www.tele.soumu.go.jp/musen/list?ST=1&OW=AT&OF=2&DA=0&SC=0&DC=1&MA=',
 
-    'mapcode':
+    'mapcode_denso':
     'https://www.drivenippon.com/mapcode/app/dn/navicon_start.php',
+
+    'mapcode':
+    'https://saibara.sakura.ne.jp/map/convgeo.cgi',
 }
+
 
 def lookup_muniCode(m):
     conn = sqlite3.connect('database/munitable.db')
@@ -48,14 +52,14 @@ def lookup_muniCode(m):
             if wdcd == '':
                 res = {'pref': pref, 'addr2': city, 'addr1': '', 'type': ty,
                        'jcc': jcc, 'jcc_text': jcc_text
-                    }
+                       }
             else:
                 res = {'pref': pref, 'addr2': city, 'addr1': '', 'type': ty,
                        'jcc': jcc, 'ward': wdcd, 'jcc_text': city
-                    }
+                       }
         else:
             res = {'pref': pref, 'addr2': city, 'addr1': '', 'type': ty,
-                   'jcg': jcg, 'jcg_text': jcg_text, 'hamlog':hamlog
+                   'jcg': jcg, 'jcg_text': jcg_text, 'hamlog': hamlog
                    }
 
         return res
@@ -63,6 +67,7 @@ def lookup_muniCode(m):
     except Exception as err:
         conn.close()
         return {}
+
 
 def lookup_jcc_jcg(q):
     conn = sqlite3.connect('database/munitable.db')
@@ -72,10 +77,10 @@ def lookup_jcc_jcg(q):
         m = re.match('\d+', q, re.A)
         if m:
             query = 'select * from muni where JCCCd like ? or JCGCd like ?'
-            cur.execute(query, ('%'+ q + '%', '%'+ q + '%',))
+            cur.execute(query, ('%' + q + '%', '%' + q + '%',))
         else:
             query = 'select * from muni where City like ? or JCC_text like ? or JCG_text like ?'
-            cur.execute(query, ('%'+ q + '%', '%'+ q + '%','%'+ q + '%',))
+            cur.execute(query, ('%' + q + '%', '%' + q + '%', '%' + q + '%',))
 
         rslt = []
         res = cur.fetchall()
@@ -96,8 +101,8 @@ def lookup_jcc_jcg(q):
                     code_t = 'JCC#' + jcc
                 title = jcc_text
             rslt.append({
-                'type':'Feature',
-                'properties':{
+                'type': 'Feature',
+                'properties': {
                     'title': title,
                     'code': code_t,
                     'address': city}})
@@ -109,6 +114,7 @@ def lookup_jcc_jcg(q):
         conn.close()
         return []
 
+
 def addr2coord(addr):
     try:
         if not addr:
@@ -118,12 +124,13 @@ def addr2coord(addr):
         if r_get.status_code == 200:
             res = r_get.json()
             lnglat = res[0]['geometry']['coordinates']
-            gl = mh.to_maiden(float(lnglat[1]), float(lnglat[0]),precision=4)
-            return (lnglat , gl)
+            gl = mh.to_maiden(float(lnglat[1]), float(lnglat[0]), precision=4)
+            return (lnglat, gl)
     except Exception as err:
-        return ([0,0], '')
+        return ([0, 0], '')
 
-def radio_station_qth(callsign, reverse = True):
+
+def radio_station_qth(callsign, reverse=True):
     try:
         if not callsign:
             raise Exception
@@ -135,20 +142,23 @@ def radio_station_qth(callsign, reverse = True):
                 rslt = []
                 for st in res['musen']:
                     addr = st['listInfo']['tdfkCd']
-                    (lnglat,gl) = addr2coord(addr)
+                    (lnglat, gl) = addr2coord(addr)
                     if code:
                         res = gsi_rev_geocoder(lnglat[1], lnglat[0], False)
-                        rslt.append({ 'callsign':callsign.upper() , 'coordinates': lnglat , 'maidenhead':gl, 'addr' :res}) 
+                        rslt.append({'callsign': callsign.upper(
+                        ), 'coordinates': lnglat, 'maidenhead': gl, 'addr': res})
                     else:
-                        rslt.append({ 'callsign':callsign.upper() , 'coordinates': lnglat , 'maidenhead':gl, 'addr': addr })
-                return { 'stations': rslt , 'errors': 'OK'}
+                        rslt.append({'callsign': callsign.upper(
+                        ), 'coordinates': lnglat, 'maidenhead': gl, 'addr': addr})
+                return {'stations': rslt, 'errors': 'OK'}
             else:
-                return { 'errors': 'Station not found'}
+                return {'errors': 'Station not found'}
     except Exception as err:
         print(err)
         return {'errors': 'Parameter out of range'}
 
-def gsi_rev_geocoder(lat, lng, elev = False, mapcode = False):
+
+def gsi_rev_geocoder(lat, lng, elev=False, mapcode=False):
     try:
         if not lat or not lng:
             raise Exception
@@ -156,8 +166,8 @@ def gsi_rev_geocoder(lat, lng, elev = False, mapcode = False):
         rev_uri = endpoint['revgeocode'] + pos
         elev_uri = endpoint['elevation'] + pos + '&outtype=JSON'
 
-        gl = mh.to_maiden(float(lat), float(lng),precision=4)
-        
+        gl = mh.to_maiden(float(lat), float(lng), precision=4)
+
         r_get = requests.get(rev_uri)
         if r_get.status_code == 200:
             res = r_get.json()
@@ -168,13 +178,13 @@ def gsi_rev_geocoder(lat, lng, elev = False, mapcode = False):
                 r['areacode'] = get_areacode(r['pref'])[:1]
             else:
                 r = {'pref': '', 'addr2': '', 'addr1': '', 'type': 'JCC',
-                     'jcc':':Unkown', 'jcc_text':''
-                }
+                     'jcc': ':Unkown', 'jcc_text': ''
+                     }
             r['maidenhead'] = gl
 
             if mapcode:
                 r['mapcode'] = get_mapcode(lat, lng)
-                
+
             if elev:
                 r_get = requests.get(elev_uri)
                 if r_get.status_code == 200:
@@ -182,7 +192,7 @@ def gsi_rev_geocoder(lat, lng, elev = False, mapcode = False):
                     if res:
                         r['elevation'] = res['elevation']
                         r['hsrc'] = res['hsrc']
-                        if r['elevation']=='-----':
+                        if r['elevation'] == '-----':
                             r['errors'] = 'OUTSIDE_JA'
                         else:
                             r['errors'] = 'OK'
@@ -196,12 +206,14 @@ def gsi_rev_geocoder(lat, lng, elev = False, mapcode = False):
         print(err)
         return {'errors': 'Parameter out of range'}
 
-def get_mapcode(lat, lng):
+
+def get_mapcode_denso(lat, lng):
+    return ''
     try:
         if not lat or not lng:
             raise Exception
-        pos = {'lat' : str(lat) ,'lng': str(lng)}
-        r_get = requests.post(endpoint['mapcode'], data=pos)
+        pos = {'lat': str(lat), 'lng': str(lng)}
+        r_get = requests.post(endpoint['mapcode_denso'], data=pos)
         if r_get.status_code == 200:
             for m in re.finditer(r'.+id="mapcode">(.+)<', r_get.text, re.MULTILINE):
                 return m.group(1)
@@ -212,26 +224,48 @@ def get_mapcode(lat, lng):
         print(err)
         return ''
 
+
+def get_mapcode(lat, lng):
+    try:
+        if not lat or not lng:
+            raise Exception
+        pos = {'t': 'wgsdeg', 'wgs_lat': str(lat), 'wgs_lon': str(lng)}
+        r_get = requests.post(endpoint['mapcode'], data=pos)
+        if r_get.status_code == 200:
+            for m in re.finditer(r'.+name="mapcode" value="([0-9 *]+)"', r_get.text, re.MULTILINE):
+                return m.group(1)
+
+            return ''
+        return ''
+    except Exception as err:
+        print(err)
+        return ''
+
+
 def gsi_rev_geocoder_list(coords, elev):
     res = []
     for latlng in coords:
         res.append(gsi_rev_geocoder(latlng[0], latlng[1], elev))
-        
+
     return res
 
+
 def sota_to_geojson(x):
-    return ({'geometry':{
-        'coordinates':[float(x['lat']),float(x['lon'])],
+    return ({'geometry': {
+        'coordinates': [float(x['lat']), float(x['lon'])],
         'type': 'Point'},
-            'type':'Feature',
-            'properties':{
+        'type': 'Feature',
+        'properties': {
                 'code': x['code'],
                 'title': x['name_j'],
                 'point': x['pts'],
-                'elevation':float(x['elev']),
-                'address':x['desc_j']}})
+                'elevation': float(x['elev']),
+                'address': x['desc_j']}})
 
-#from sotasummit import sotasummit
+# from sotasummit import sotasummit
+
+# from sotasummit import sotasummit
+
 
 def gsi_geocoder(query, elev, revquery):
     try:
@@ -243,14 +277,14 @@ def gsi_geocoder(query, elev, revquery):
             else:
                 res = sotasummit('JA', query, None)
                 if res.get('summits'):
-                    return(list(map(sota_to_geojson,
-                                    list(res['summits']))))
+                    return (list(map(sota_to_geojson,
+                                     list(res['summits']))))
                 else:
-                    return([])
+                    return ([])
         else:
             res = sotasummit('JA', None, query)
             if res.get('summits'):
-                res1 = list(map(sota_to_geojson,list(res['summits'])))
+                res1 = list(map(sota_to_geojson, list(res['summits'])))
             else:
                 res1 = []
             res2 = lookup_jcc_jcg(query)
@@ -265,15 +299,16 @@ def gsi_geocoder(query, elev, revquery):
                             rev = gsi_rev_geocoder(r['geometry']['coordinates'][1],
                                                    r['geometry']['coordinates'][0], True)
                             r['properties'].update(address=rev)
-                    return(res1 + res2 + res)
+                    return (res1 + res2 + res)
                 else:
                     raise Exception
             else:
-                return(res1+ res2)
+                return (res1 + res2)
 
     except Exception as err:
         raise err
         return {'errors': 'parameter out of range'}
+
 
 def gsi_geocoder_vue(query, elev, revquery):
     res = gsi_geocoder(query, elev, revquery)
@@ -286,7 +321,7 @@ def gsi_geocoder_vue(query, elev, revquery):
         else:
             pos = []
             elev = 0
-            
+
         rslt.append({
             'code': r['properties']['code'],
             'title': r['properties']['title'],
@@ -297,8 +332,9 @@ def gsi_geocoder_vue(query, elev, revquery):
     return(rslt)
 
 if __name__ == "__main__":
-    print(gsi_rev_geocoder(35.595247, 139.517828, True, True))
-    print(gsi_rev_geocoder(43.804832, 142.879944, True, True))
+    #print(gsi_rev_geocoder(35.595247, 139.517828, True, True))
+    #print(gsi_rev_geocoder(43.804832, 142.879944, True, True))
+    print(get_mapcode2(35.656158618253926,139.6459883257073))
 #    print(radio_station_qth('jl1nie'))
 #    print(gsi_rev_geocoder_list([
 #       ['55.754976', '138.232899'],
