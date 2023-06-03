@@ -6,11 +6,16 @@ from flask_cors import CORS
 from flask_compress import Compress
 
 import json
+import re
 
 from gsi_geocoder import gsi_geocoder, gsi_rev_geocoder, gsi_geocoder_vue, radio_station_qth
 from aprs_tracklog import aprs_track_stations, aprs_track_tracks
 from sotasummit import sotasummit, jaffpota_parks, sotajaffpota_ref
 from sotaalerts import sotaalerts, sotaspots, sotaalerts_and_spots
+
+from jaffpota_search import JAFFPOTASearch
+from sota_search import SOTASearch
+
 from sotakeyer import sotakeyer
 from geomag import kp_indicies
 from nostr_nip05 import nostr_nip05
@@ -21,6 +26,9 @@ app = Flask(__name__)
 compress = Compress()
 compress.init_app(app)
 CORS(app, resources={r"/api": {"origins": "*"}})
+
+pota = JAFFPOTASearch()
+sota = SOTASearch()
 
 
 @app.route("/api/reverse-geocoder/LonLatToAddress")
@@ -121,8 +129,96 @@ def JaffpotaParks():
 @app.route("/api/sota-jaff-pota")
 def SOTAJAFFPOTAParks():
     refid = request.args.get('refid')
-    res = sotajaffpota_ref({'refid': refid})
-    return (json.dumps(res))
+    if not refid:
+        return {'counts': 0, 'reference': []}
+
+    refid = refid.upper()
+    msota = re.search(r'\w\w-\d+', refid)
+    mpota = re.search(r'\d\d\d\d', refid)
+
+    if 'JA-' in refid or 'JAFF-' in refid or mpota:
+        res = pota.searchParkId(refid)
+    elif msota:
+        res = sota.searchSummitId(refid)
+    elif refid.isascii():
+        res = pota.searchParkId(refid)
+        res += sota.searchSummitId(refid)
+    else:
+        res = pota.searchParkId(refid, True)
+        res += sota.searchSummitId(refid, True)
+
+    reslen = len(res)
+
+    if reslen < 300:
+        return {'counts': reslen, 'reference': res}
+    else:
+        return {'counts': reslen}
+
+
+@app.route("/api/myact/potalog", methods=['GET', 'POST'])
+def myActLog():
+    command = request.args.get('command', '').upper()
+    logid = request.args.get('logid', None)
+    logid_act = request.args.get('logid_act', None)
+    logid_hunt = request.args.get('logid_hunt', None)
+    if command == 'CHECK':
+        res = pota.check_uuid(logid)
+    elif command == 'DELETE':
+        res = pota.delete_uuid(logid)
+    elif command == 'UPLOAD':
+        file = request.files['uploadfile']
+        res = pota.upload_log(logid_act,logid_hunt, file)
+    else:
+        return {'errors': 'Unknown command:' + command}
+
+    return res
+
+
+@app.route("/api/myact/search")
+def myActSearch():
+    programs = request.args.get('programs', None)
+    lat = request.args.get('lat')
+    lon = request.args.get('lon')
+    lat2 = request.args.get('lat2')
+    lon2 = request.args.get('lon2')
+    rng = request.args.get('range')
+    srng = request.args.get('srange')
+    elevation = request.args.get('elevation', 0)
+    parkarea = request.args.get('parkarea', 0)
+    revgeo = request.args.get('georev', False)
+    logid = request.args.get('logid', None)
+    parkid = request.args.get('parkid', None)
+
+    options = {
+        'parkid': parkid,
+        'lat': lat,
+        'lon': lon,
+        'lat2': lat2,
+        'lon2': lon2,
+        'range': rng,
+        'srange': srng,
+        'elevation': elevation,
+        'parkarea': parkarea,
+        'revgeo': revgeo,
+        'logid': logid,
+    }
+
+    if not programs:
+        res = {'errors': 'No programs specified'}
+    else:
+        sotares = []
+        if 'SOTA' in programs.upper():
+            s = sota.sotasummit_region(options)
+            if s['errors'] == 'OK':
+                sotares = s['summits']
+
+        potares = []
+        if 'POTA' in programs.upper() or 'JAFF' in programs.upper():
+            p = pota.jaffpota_parks(options)
+            if p['errors'] == 'OK':
+                potares = p['parks']
+
+        return {'errors': 'OK', 'summits': sotares, 'parks': potares}
 
 
 @app.route("/api/sota-pota-spots")
@@ -148,7 +244,7 @@ def SOTAsummits(region):
     lng2 = request.args.get('lon2')
     rng = request.args.get('range')
     srng = request.args.get('srange')
-    park= request.args.get('park')
+    park = request.args.get('park')
     elev = request.args.get('elevation')
     flag = request.args.get('flag')
     potadb = request.args.get('potadb')
@@ -156,22 +252,23 @@ def SOTAsummits(region):
                      {'code': code,
                       'name': name,
                       'ambg': ambg,
-                      'flag':flag,
-                      'lat':lat,'lon':lng,
-                      'lat2':lat2,'lon2':lng2,
-                      'park':park,
-                      'potadb':potadb,
-                      'elevation':elev,
-                      'range':rng,
-                      'srange':srng})
-    return(json.dumps(res))
+                      'flag': flag,
+                      'lat': lat, 'lon': lng,
+                      'lat2': lat2, 'lon2': lng2,
+                      'park': park,
+                      'potadb': potadb,
+                      'elevation': elev,
+                      'range': rng,
+                      'srange': srng})
+    return (json.dumps(res))
+
 
 @app.route("/api/sotaalerts/summits/<string:code_prefix>")
 def SOTAlertsSummit(code_prefix):
     fm = request.args.get('from')
     to = request.args.get('to')
     res = sotaalerts(code_prefix, None, fm, to)
-    return(json.dumps(res))
+    return (json.dumps(res))
 
 
 @app.route("/api/sotaalerts/continent/<string:continent>")
@@ -179,7 +276,7 @@ def SOTAlertsContinent(continent):
     fm = request.args.get('from')
     to = request.args.get('to')
     res = sotaalerts(None, continent.split(','), fm, to)
-    return(json.dumps(res))
+    return (json.dumps(res))
 
 
 @app.route("/api/sotaalerts")
@@ -187,28 +284,32 @@ def SOTAlerts():
     fm = request.args.get('from')
     to = request.args.get('to')
     res = sotaalerts(None, None, fm, to)
-    return(json.dumps(res))
+    return (json.dumps(res))
+
 
 @app.route("/api/sotaspots/summits/<string:code_prefix>")
 def SOTASpotsSummit(code_prefix):
     mode = request.args.get('mode')
     to = request.args.get('to')
     res = sotaspots(code_prefix, None, mode, to)
-    return(json.dumps(res))
+    return (json.dumps(res))
+
 
 @app.route("/api/sotaspots/continent/<string:continent>")
 def SOTASpotsContinent(continent):
     mode = request.args.get('mode')
     to = request.args.get('to')
     res = sotaspots(None, mode, continent.split(','), to)
-    return(json.dumps(res))
+    return (json.dumps(res))
+
 
 @app.route("/api/sotaspots")
 def SOTASpots():
     mode = request.args.get('mode')
     to = request.args.get('to')
     res = sotaspots(None, mode, None, to)
-    return(json.dumps(res))
+    return (json.dumps(res))
+
 
 @app.route("/api/sota-alerts-spots/summits/<string:code_prefix>")
 def SOTAAlertsSpotsSummit(code_prefix):
@@ -216,7 +317,8 @@ def SOTAAlertsSpotsSummit(code_prefix):
     fm = request.args.get('from')
     to = request.args.get('to')
     res = sotaalerts_and_spots(code_prefix, mode, None, fm, to)
-    return(json.dumps(res))
+    return (json.dumps(res))
+
 
 @app.route("/api/sota-alerts-spots/continent/<string:continent>")
 def SOTAAlertsSpotsContinent(continent):
@@ -224,7 +326,8 @@ def SOTAAlertsSpotsContinent(continent):
     fm = request.args.get('from')
     to = request.args.get('to')
     res = sotaalerts_and_spots(None, mode, continent.split(','), fm, to)
-    return(json.dumps(res))
+    return (json.dumps(res))
+
 
 @app.route("/api/sota-alerts-spots")
 def SOTAAlertsSpots():
@@ -232,18 +335,21 @@ def SOTAAlertsSpots():
     fm = request.args.get('from')
     to = request.args.get('to')
     res = sotaalerts_and_spots(None, mode, None, fm, to)
-    return(json.dumps(res))
+    return (json.dumps(res))
+
 
 @app.route("/api/geomag")
 def GeoMag():
     res = kp_indicies()
-    return(json.dumps(res))
+    return (json.dumps(res))
+
 
 @app.route("/api/nostr.json")
 def Nostr():
     name = request.args.get('name')
     res = nostr_nip05(name)
-    return(json.dumps(res))
+    return (json.dumps(res))
+
 
 @app.route("/api/sotakeyer/")
 def SOTAKeyer():
@@ -263,9 +369,9 @@ def SOTAKeyer():
         'spot_prefix': spot_prefix,
         'spot_mode': spot_mode,
         'spot_range': spot_range})
-    
-    return(json.dumps(res))
+
+    return (json.dumps(res))
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host='0.0.0.0',port = 5000)
+    app.run(debug=True, host='0.0.0.0', port=5000)

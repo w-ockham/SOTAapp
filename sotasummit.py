@@ -10,13 +10,9 @@ grs80 = pyproj.Geod(ellps='GRS80')
 def searchParkLoc(selat, nwlat, nwlng, selng, options):
     level = int(options['park'])
 
-    if options['potadb']:
-        dbname = 'database/jaffpota.db-new'
-    else:
-        dbname = 'database/jaffpota.db'
-
+    dbname = 'database/jaffpota.db'
     conn = sqlite3.connect(dbname)
-        
+
     cur = conn.cursor()
     query = 'select * from jaffpota where (lat > ?) and (lat < ?) and (lng > ?) and (lng < ?) and (level >= ?)'
     cur.execute(query, (selat, nwlat, nwlng, selng, level))
@@ -119,7 +115,6 @@ def sotajaffpota_ref(options):
     elif msota:
         res = searchSummitId(refid)
     elif refid.isascii():
-        
         res  = searchParkId(refid)
         res += searchSummitId(refid)
     else:
