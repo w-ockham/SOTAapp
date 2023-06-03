@@ -1,0 +1,8 @@
+[JAFFPOTA]
+dbdir = './database/'
+database = 'jaffpota.db'
+expire = 180
+
+[SOTA]
+dbdir = './database/'
+database = 'summits.db'
