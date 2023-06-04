@@ -157,22 +157,7 @@ def SOTAJAFFPOTAParks():
 
 @app.route("/api/myact/potalog", methods=['GET', 'POST'])
 def myActLog():
-    command = request.args.get('command', '').upper()
-    logid = request.args.get('logid', None)
-    logid_act = request.args.get('logid_act', None)
-    logid_hunt = request.args.get('logid_hunt', None)
-    if command == 'CHECK':
-        res = pota.check_uuid(logid)
-    elif command == 'DELETE':
-        res = pota.delete_uuid(logid)
-    elif command == 'UPLOAD':
-        file = request.files['uploadfile']
-        res = pota.upload_log(logid_act,logid_hunt, file)
-    else:
-        return {'errors': 'Unknown command:' + command}
-
-    return res
-
+    return pota.command(request)
 
 @app.route("/api/myact/search")
 def myActSearch():

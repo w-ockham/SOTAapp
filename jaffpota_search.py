@@ -127,6 +127,18 @@ class JAFFPOTASearch:
         else:
             return {'errors': 'OK', 'counts': len(r) }
         
+    def stat_db(self):
+        cur = self.conn.cursor()
+        q = 'select count(*) from potauser;'
+        cur.execute(q)
+        user = cur.fetchone();
+
+        q = 'select count(*) from potalog;'
+        cur.execute(q)
+        log = cur.fetchone();
+
+        return {'errors': 'OK', 'users':user[0], 'logs': log[0]}
+        
     def upload_log(self, actid, huntid, fd):
         with io.TextIOWrapper(fd, encoding='utf-8') as f:
             reader = csv.reader(f, delimiter=',', quotechar='"')
@@ -313,25 +325,36 @@ class JAFFPOTASearch:
 
         return {'errors': 'OK', 'parks': res}
 
+    def command(self, req):
+        command = req.args.get('command','').upper()
+
+        if command == 'CHECK':
+            logid = req.args.get('logid',None)
+            return self.check_uuid(logid)
+
+        elif command == 'DELETE':
+            logid = req.args.get('logid',None)
+            return self.delete_uuid(logid)
+
+        elif command == 'UPLOAD':
+            logid_act = req.args.get('logid_act', None)
+            logid_hunt = req.args.get('logid_hunt', None)
+            file = req.files['uploadfile']
+            return self.upload_log(logid_act, logid_hunt, file)
+
+        elif command == 'SEARCH':
+            logid = req.args.get('logid',None)
+            refid = req.args.get('refid',None)
+            return self.search_log(logid, refid)
+
+        elif command == 'STAT':
+            return self.stat_db()
+
+        return {'errors': 'Unknown command: ' + command}
 
 if __name__ == "__main__":
     basedir = os.path.dirname(__file__)
     potalog = JAFFPOTASearch(basedir=basedir)
-    potalog.drop_database()
-
-    potalog = JAFFPOTASearch(basedir=basedir)
-
-    with open(basedir + '/activator_parks.csv') as f:
-        res1 = potalog.upload_log(None, f)
-    print(res1)
-
-    with open(basedir + '/activator_parks.csv') as f:
-        res2 = potalog.upload_log(res1['uuid'], f)
-    print(res2)
-
-    with open(basedir + '/hunter_parks.csv') as f:
-        res3 = potalog.upload_log(None, f)
-    print(res3)
 
     t_start = time.perf_counter()
     res = potalog.jaffpota_parks(
@@ -349,27 +372,3 @@ if __name__ == "__main__":
     for e in res['parks']:
         if e['pota'] == 'JA-0014':
             print(e)
-
-    t_start = time.perf_counter()
-    res = potalog.searchParkLoc('30.0', '40.0', '120.0', '150.0',
-                                logid=res3['uuid'],
-                                parkarea=0)
-    t_end = time.perf_counter()
-    print(t_end - t_start)
-    print(len(res))
-    for e in res:
-        if e['pota'] == 'JA-0014':
-            print(e)
-
-    t_start = time.perf_counter()
-    res = potalog.searchParkLoc('30.0', '40.0', '120.0', '150.0',
-                                parkarea=0)
-    t_end = time.perf_counter()
-    print(t_end - t_start)
-    print(len(res))
-    for e in res:
-        if e['pota'] == 'JA-0014':
-            print(e)
-
-    print(potalog.searchParkId('JA-0014', logid=res2['uuid']))
-    print(potalog.searchParkId('JA-0014', logid=res3['uuid']))
