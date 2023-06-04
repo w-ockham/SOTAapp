@@ -116,6 +116,17 @@ class JAFFPOTASearch:
         self.conn.commit()
         return (id, d)
 
+    def search_log(self, logid, refid):
+        cur = self.conn.cursor()
+        q = 'select * from potalog where uuid = ? and ref = ?'
+        cur.execute(q,(logid, refid,))
+        r = cur.fetchall()
+
+        if len(r) == 0:
+            return {'errors': 'No references were found'}
+        else:
+            return {'errors': 'OK', 'counts': len(r) }
+        
     def upload_log(self, actid, huntid, fd):
         with io.TextIOWrapper(fd, encoding='utf-8') as f:
             reader = csv.reader(f, delimiter=',', quotechar='"')
@@ -125,21 +136,23 @@ class JAFFPOTASearch:
             
             for row in reader:
                 if lc == 0:
-                    if len(row) == 9:
+                    if row[2] != 'HASC':
+                        return {'errors': 'CSV Format Error'}
+
+                    rlen = len(row)
+                    if not (rlen in [7,9]):
+                        return {'errors': 'CSV Format Error'}
+                    
+                    if rlen == 9:
                         activation_log = 1
                         logtype = 'ACT'
                         (id, d) = self.update_uuid(actid)
                     
-                    elif len(row) == 7:
+                    elif rlen == 7:
                         activation_log = 0
                         logtype = 'HUNT'
                         (id, d) = self.update_uuid(huntid)
-                        
-                    else:
-                        return {'errors': 'CSV Format Error'}
 
-                    if row[2] != 'HASC':
-                        return {'errors': 'CSV Format Error'}
                     lc += 1
                 else:
                     q = 'insert into potalog(uuid, ref, type, hasc, date, qso, attempt, activate) values(?, ?, ?, ?, ?, ?, ?, ?)'
