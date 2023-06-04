@@ -133,47 +133,50 @@ class JAFFPOTASearch:
             activation_log = 0
             cur = self.conn.cursor()
             lc = 0
-            
-            for row in reader:
-                if lc == 0:
-                    if row[2] != 'HASC':
-                        return {'errors': 'CSV Format Error'}
 
-                    rlen = len(row)
-                    if not (rlen in [7,9]):
-                        return {'errors': 'CSV Format Error'}
+            try:
+                for row in reader:
+                    if lc == 0:
+                        if row[2] != 'HASC':
+                            return {'errors': 'CSV Format Error'}
+                        
+                        rlen = len(row)
+                        if not (rlen in [7,9]):
+                            return {'errors': 'CSV Format Error'}
                     
-                    if rlen == 9:
-                        activation_log = 1
-                        logtype = 'ACT'
-                        (id, d) = self.update_uuid(actid)
+                        if rlen == 9:
+                            activation_log = 1
+                            logtype = 'ACT'
+                            (id, d) = self.update_uuid(actid)
                     
-                    elif rlen == 7:
-                        activation_log = 0
-                        logtype = 'HUNT'
-                        (id, d) = self.update_uuid(huntid)
+                        elif rlen == 7:
+                            activation_log = 0
+                            logtype = 'HUNT'
+                            (id, d) = self.update_uuid(huntid)
 
-                    lc += 1
-                else:
-                    q = 'insert into potalog(uuid, ref, type, hasc, date, qso, attempt, activate) values(?, ?, ?, ?, ?, ?, ?, ?)'
-                    ref = row[3]
-                    logty = activation_log
-                    hasc = row[2]
-                    date = row[5]
-
-                    if activation_log == 1:
-                        attempt = int(row[6])
-                        activate = int(row[7])
-                        qso = int(row[8])
+                        lc += 1
                     else:
-                        attempt = 0
-                        activate = 0
-                        qso = int(row[6])
+                        q = 'insert into potalog(uuid, ref, type, hasc, date, qso, attempt, activate) values(?, ?, ?, ?, ?, ?, ?, ?)'
+                        ref = row[3]
+                        logty = activation_log
+                        hasc = row[2]
+                        date = row[5]
+                        
+                        if activation_log == 1:
+                            attempt = int(row[6])
+                            activate = int(row[7])
+                            qso = int(row[8])
+                        else:
+                            attempt = 0
+                            activate = 0
+                            qso = int(row[6])
 
-                    cur.execute(q, (id, ref, logty, hasc,
-                                    date, qso, attempt, activate,))
-                    lc += 1
-
+                        cur.execute(q, (id, ref, logty, hasc,
+                                        date, qso, attempt, activate,))
+                        lc += 1
+            except Exception as e:
+                return {'errors': 'CSV Format Error'}
+            
             self.conn.commit()
             return {'errors': 'OK', 'uuid': id, 'date': d, 'logtype': logtype, 'entry': lc}
 
