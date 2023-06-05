@@ -20,7 +20,7 @@ class JAFFPOTASearch:
 
         self.conn = sqlite3.connect(
             self.config['dbdir'] + self.config['database'],
-            isolation_level='IMMEDIATE',timeout=3000)
+            isolation_level='IMMEDIATE', timeout=3000)
 
         cur = self.conn.cursor()
         q = 'create table if not exists potauser(uuid text,time int, primary key(uuid))'
@@ -119,26 +119,80 @@ class JAFFPOTASearch:
     def search_log(self, logid, refid):
         cur = self.conn.cursor()
         q = 'select * from potalog where uuid = ? and ref = ?'
-        cur.execute(q,(logid, refid,))
+        cur.execute(q, (logid, refid,))
         r = cur.fetchall()
 
         if len(r) == 0:
             return {'errors': 'No references were found'}
         else:
-            return {'errors': 'OK', 'counts': len(r) }
-        
+            return {'errors': 'OK', 'counts': len(r)}
+
     def stat_db(self):
         cur = self.conn.cursor()
-        q = 'select count(*) from potauser;'
+        cur2 = self.conn.cursor()
+
+        now = int(datetime.utcnow().timestamp())
+        expire_before = now - int(self.config['expire']*3600*24)
+
+        q = 'select count(*) from potauser'
         cur.execute(q)
-        user = cur.fetchone();
+        user = cur.fetchone()
+
+        q = 'select count(*) from potauser where time < ?'
+        cur.execute(q, (expire_before,))
+        expire = cur.fetchone()
 
         q = 'select count(*) from potalog;'
         cur.execute(q)
-        log = cur.fetchone();
+        log = cur.fetchone()
 
-        return {'errors': 'OK', 'users':user[0], 'logs': log[0]}
-        
+        q = 'select * from potauser'
+        cur.execute(q)
+
+        logerror = 0
+        (uuid_l, longest) = (None, 0)
+
+        for (uuid, _) in cur.fetchall():
+            q = 'select count(*) from potalog where uuid = ?'
+            cur2.execute(q, (uuid,))
+            r = cur2.fetchone()
+            if r[0] == 0:
+                logerror += 1
+            else:
+                if r[0] > longest:
+                    uuid_l = uuid
+                    longest = r[0]
+
+        start = time.perf_counter()
+        res = self.jaffpota_parks(
+            {
+                'lat': '46.0',
+                'lat2': '20.0',
+                'lon': '120.0',
+                'lon2': '150.0',
+                'parkarea': 0
+            })
+        end = time.perf_counter()
+        t1 = end - start
+
+        start = time.perf_counter()
+        res = self.jaffpota_parks(
+            {
+                'lat': '46.0',
+                'lat2': '20.0',
+                'lon': '120.0',
+                'lon2': '150.0',
+                'logid': uuid_l,
+                'parkarea': 0
+            })
+        end = time.perf_counter()
+
+        t2 = end - start
+        t1 = round((t2 - t1)*1000, 2)
+        t2 = round(t2*1000, 2)
+
+        return {'errors': 'OK', 'log_uploaded': user[0], 'log_entries': log[0], 'log_expired': expire[0], 'log_error': logerror, 'longest_entry': longest, 'query_elapsed_ms': t2, 'query_perf_degrade_ms': t1}
+
     def upload_log(self, actid, huntid, fd):
         with io.TextIOWrapper(fd, encoding='utf-8') as f:
             reader = csv.reader(f, delimiter=',', quotechar='"')
@@ -151,16 +205,16 @@ class JAFFPOTASearch:
                     if lc == 0:
                         if row[2] != 'HASC':
                             return {'errors': 'CSV Format Error'}
-                        
+
                         rlen = len(row)
-                        if not (rlen in [7,9]):
+                        if not (rlen in [7, 9]):
                             return {'errors': 'CSV Format Error'}
-                    
+
                         if rlen == 9:
                             activation_log = 1
                             logtype = 'ACT'
                             (id, d) = self.update_uuid(actid)
-                    
+
                         elif rlen == 7:
                             activation_log = 0
                             logtype = 'HUNT'
@@ -173,7 +227,7 @@ class JAFFPOTASearch:
                         logty = activation_log
                         hasc = row[2]
                         date = row[5]
-                        
+
                         if activation_log == 1:
                             attempt = int(row[6])
                             activate = int(row[7])
@@ -188,7 +242,7 @@ class JAFFPOTASearch:
                         lc += 1
             except Exception as e:
                 return {'errors': 'CSV Format Error'}
-            
+
             self.conn.commit()
             return {'errors': 'OK', 'uuid': id, 'date': d, 'logtype': logtype, 'entry': lc}
 
@@ -326,14 +380,14 @@ class JAFFPOTASearch:
         return {'errors': 'OK', 'parks': res}
 
     def command(self, req):
-        command = req.args.get('command','').upper()
+        command = req.args.get('command', '').upper()
 
         if command == 'CHECK':
-            logid = req.args.get('logid',None)
+            logid = req.args.get('logid', None)
             return self.check_uuid(logid)
 
         elif command == 'DELETE':
-            logid = req.args.get('logid',None)
+            logid = req.args.get('logid', None)
             return self.delete_uuid(logid)
 
         elif command == 'UPLOAD':
@@ -343,14 +397,15 @@ class JAFFPOTASearch:
             return self.upload_log(logid_act, logid_hunt, file)
 
         elif command == 'SEARCH':
-            logid = req.args.get('logid',None)
-            refid = req.args.get('refid',None)
+            logid = req.args.get('logid', None)
+            refid = req.args.get('refid', None)
             return self.search_log(logid, refid)
 
         elif command == 'STAT':
             return self.stat_db()
 
         return {'errors': 'Unknown command: ' + command}
+
 
 if __name__ == "__main__":
     basedir = os.path.dirname(__file__)
@@ -363,7 +418,6 @@ if __name__ == "__main__":
             'lat2': '30.0',
             'lon': '120.0',
             'lon2': '150.0',
-            'logid': res1['uuid'],
             'parkarea': 0
         })
     t_end = time.perf_counter()
@@ -372,3 +426,5 @@ if __name__ == "__main__":
     for e in res['parks']:
         if e['pota'] == 'JA-0014':
             print(e)
+
+    print(potalog.stat_db())
