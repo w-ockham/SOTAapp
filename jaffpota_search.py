@@ -5,6 +5,7 @@ import os
 import time
 import toml
 import uuid
+import secrets
 import sqlite3
 
 
@@ -31,6 +32,8 @@ class JAFFPOTASearch:
         cur.execute(q)
         q = 'create index if not exists potalog_idx on potalog(uuid, ref, type)'
         cur.execute(q)
+        q = 'create table if not exists potashare(key int,time int,uuid_act text, uuid_hunt text)'
+        cur.execute(q)
         self.conn.commit()
 
     def __del__(self):
@@ -50,7 +53,7 @@ class JAFFPOTASearch:
         now = int(datetime.utcnow().timestamp())
         d = datetime.fromtimestamp(now).strftime('%Y-%m-%d')
 
-        time = now - int(self.config['expire']*3600*24)
+        time = now - int(self.config['expire_log']*3600*24)
         q = 'select uuid from potauser where time < ?'
         cur.execute(q, (time,))
         for (e,) in cur.fetchall():
@@ -69,7 +72,7 @@ class JAFFPOTASearch:
         else:
             time = r[0][0]
             create_d = datetime.fromtimestamp(time).strftime('%Y-%m-%d')
-            time_e = time + int(self.config['expire']*3600*24)
+            time_e = time + int(self.config['expire_log']*3600*24)
             expire_d = datetime.fromtimestamp(time_e).strftime('%Y-%m-%d')
             res = {'errors': 'OK', 'uuid': id,
                    'create': create_d, 'expire': expire_d}
@@ -116,6 +119,66 @@ class JAFFPOTASearch:
         self.conn.commit()
         return (id, d)
 
+    def clear_old_key(self, now):
+        cur = self.conn.cursor()
+        time = now - int(self.config['expire_key'])
+        q = 'delete from potashare where time < ?'
+        cur.execute(q, (time,))
+        self.conn.commit()
+        
+    def export_uuid(self, uuid_act, uuid_hunt):
+        now = int(datetime.utcnow().timestamp())
+        self.clear_old_key(now)
+
+        cur = self.conn.cursor()
+        
+        for uuid in [ uuid_act, uuid_hunt]:
+            if uuid != 'undefined' and uuid != 'null':
+                q = 'select count(*) from potauser where uuid =?'
+                cur.execute(q, (uuid,))
+                r = cur.fetchone()
+                if r[0] == 0:
+                    return {'errors': 'No such uuid', 'uuid': uuid }
+        rc = 0
+        while rc < 10:
+            sharekey = secrets.randbelow(1000000)
+            q = 'select count(*) from potashare where key = ?'
+            cur.execute(q, (sharekey,))
+            r = cur.fetchone()
+            if r[0] == 0:
+                break;
+            rc += 1
+            
+        if rc >= 10:
+            return {'errors': 'Key conflict error'}
+
+        time_e = now + int(self.config['expire_key'])
+        
+        q = 'insert into potashare(key, time, uuid_act, uuid_hunt) values(?, ?, ?, ?)'
+        cur.execute(q, (sharekey, time_e, uuid_act, uuid_hunt,))
+
+        self.conn.commit()
+
+        keystr = str(sharekey).zfill(6)
+        return { 'errors': 'OK', 'sharekey': keystr }
+    
+    def import_uuid(self, keystr):
+
+        now = int(datetime.utcnow().timestamp())
+        self.clear_old_key(now)
+        
+        sharekey = int(keystr)
+        cur = self.conn.cursor()
+        q = 'select * from potashare where key = ?'
+        cur.execute(q, (sharekey,))
+        r = cur.fetchone()
+
+        if r == None:
+            return {'errors': 'No such share key'}
+        else:
+            (_, _, uuid_act, uuid_hunt) = r
+            return {'errors': 'OK', 'uuid_act': uuid_act, 'uuid_hunt': uuid_hunt}
+        
     def search_log(self, logid, refid):
         cur = self.conn.cursor()
         q = 'select * from potalog where uuid = ? and ref = ?'
@@ -132,7 +195,7 @@ class JAFFPOTASearch:
         cur2 = self.conn.cursor()
 
         now = int(datetime.utcnow().timestamp())
-        expire_before = now - int(self.config['expire']*3600*24)
+        expire_before = now - int(self.config['expire_log']*3600*24)
 
         q = 'select count(*) from potauser'
         cur.execute(q)
@@ -396,6 +459,15 @@ class JAFFPOTASearch:
             file = req.files['uploadfile']
             return self.upload_log(logid_act, logid_hunt, file)
 
+        elif command == 'EXPORT':
+            logid_act = req.args.get('logid_act', None)
+            logid_hunt = req.args.get('logid_hunt', None)
+            return self.export_uuid(logid_act, logid_hunt)
+
+        elif command == 'IMPORT':
+            sharekey = req.args.get('sharekey', None)
+            return self.import_uuid(sharekey)
+
         elif command == 'SEARCH':
             logid = req.args.get('logid', None)
             refid = req.args.get('refid', None)
@@ -428,3 +500,13 @@ if __name__ == "__main__":
             print(e)
 
     print(potalog.stat_db())
+
+    key1 = 'b72d90d0-3f97-4595-abe8-dc71736c3cba'
+    key2 = 'null'
+
+    res = potalog.export_uuid(key1, key2)
+    print(res)
+    time.sleep(10)
+    res = potalog.import_uuid(res['sharekey'])
+    print(res)
+    
