@@ -125,20 +125,20 @@ class JAFFPOTASearch:
         q = 'delete from potashare where time < ?'
         cur.execute(q, (time,))
         self.conn.commit()
-        
+
     def export_uuid(self, uuid_act, uuid_hunt):
         now = int(datetime.utcnow().timestamp())
         self.clear_old_key(now)
 
         cur = self.conn.cursor()
-        
-        for uuid in [ uuid_act, uuid_hunt]:
+
+        for uuid in [uuid_act, uuid_hunt]:
             if uuid != 'undefined' and uuid != 'null':
                 q = 'select count(*) from potauser where uuid =?'
                 cur.execute(q, (uuid,))
                 r = cur.fetchone()
                 if r[0] == 0:
-                    return {'errors': 'No such uuid', 'uuid': uuid }
+                    return {'errors': 'No such uuid', 'uuid': uuid}
         rc = 0
         while rc < 10:
             sharekey = secrets.randbelow(1000000)
@@ -146,9 +146,9 @@ class JAFFPOTASearch:
             cur.execute(q, (sharekey,))
             r = cur.fetchone()
             if r[0] == 0:
-                break;
+                break
             rc += 1
-            
+
         if rc >= 10:
             return {'errors': 'Key conflict error'}
 
@@ -166,6 +166,9 @@ class JAFFPOTASearch:
 
         now = int(datetime.utcnow().timestamp())
         self.clear_old_key(now)
+
+        if not keystr.isdigit():
+            return {'errors': 'No such share key'}
         
         sharekey = int(keystr)
         cur = self.conn.cursor()
