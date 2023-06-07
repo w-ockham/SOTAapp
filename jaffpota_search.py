@@ -191,7 +191,10 @@ class JAFFPOTASearch:
         if len(r) == 0:
             return {'errors': 'No references were found'}
         else:
-            return {'errors': 'OK', 'counts': len(r)}
+            q = 'select locid from jaffpota where pota = ?'
+            cur.execute(q, (refid,))
+            r = cur.fetchone()
+            return {'errors': 'OK', 'counts': len(r), 'locid': r[0].split('.')}
 
     def stat_db(self):
         cur = self.conn.cursor()
@@ -504,12 +507,6 @@ if __name__ == "__main__":
 
     print(potalog.stat_db())
 
-    key1 = 'b72d90d0-3f97-4595-abe8-dc71736c3cba'
-    key2 = 'null'
-
-    res = potalog.export_uuid(key1, key2)
-    print(res)
-    time.sleep(10)
-    res = potalog.import_uuid(res['sharekey'])
-    print(res)
-    
+    key = 'a8b28dc1-ed1a-415a-9e95-ce8fc28c970d'
+    ref = 'JA-1096'
+    print(potalog.searchParkId(ref, logid=key))
