@@ -121,9 +121,8 @@ class JAFFPOTASearch:
 
     def clear_old_key(self, now):
         cur = self.conn.cursor()
-        time = now - int(self.config['expire_key'])
         q = 'delete from potashare where time < ?'
-        cur.execute(q, (time,))
+        cur.execute(q, (now,))
         self.conn.commit()
 
     def export_uuid(self, uuid_act, uuid_hunt):
@@ -153,15 +152,15 @@ class JAFFPOTASearch:
             return {'errors': 'Key conflict error'}
 
         time_e = now + int(self.config['expire_key'])
-        
+
         q = 'insert into potashare(key, time, uuid_act, uuid_hunt) values(?, ?, ?, ?)'
         cur.execute(q, (sharekey, time_e, uuid_act, uuid_hunt,))
 
         self.conn.commit()
 
         keystr = str(sharekey).zfill(6)
-        return { 'errors': 'OK', 'sharekey': keystr }
-    
+        return {'errors': 'OK', 'sharekey': keystr}
+
     def import_uuid(self, keystr):
 
         now = int(datetime.utcnow().timestamp())
@@ -506,7 +505,3 @@ if __name__ == "__main__":
             print(e)
 
     print(potalog.stat_db())
-
-    key = 'a8b28dc1-ed1a-415a-9e95-ce8fc28c970d'
-    ref = 'JA-1096'
-    print(potalog.searchParkId(ref, logid=key))
