@@ -168,7 +168,7 @@ class JAFFPOTASearch:
 
         if not keystr.isdigit():
             return {'errors': 'No such share key'}
-        
+
         sharekey = int(keystr)
         cur = self.conn.cursor()
         q = 'select * from potashare where key = ?'
@@ -180,7 +180,7 @@ class JAFFPOTASearch:
         else:
             (_, _, uuid_act, uuid_hunt) = r
             return {'errors': 'OK', 'uuid_act': uuid_act, 'uuid_hunt': uuid_hunt}
-        
+
     def search_log(self, logid, refid):
         cur = self.conn.cursor()
         q = 'select * from potalog where uuid = ? and ref = ?'
@@ -210,7 +210,7 @@ class JAFFPOTASearch:
         cur.execute(q, (expire_before,))
         expire = cur.fetchone()
 
-        q = 'select count(*) from potalog;'
+        q = 'select count(*) from potalog'
         cur.execute(q)
         log = cur.fetchone()
 
@@ -259,7 +259,26 @@ class JAFFPOTASearch:
         t1 = round((t2 - t1)*1000, 2)
         t2 = round(t2*1000, 2)
 
-        return {'errors': 'OK', 'log_uploaded': user[0], 'log_entries': log[0], 'log_expired': expire[0], 'log_error': logerror, 'longest_entry': longest, 'query_elapsed_ms': t2, 'query_perf_degrade_ms': t1}
+
+        q = 'select min(time) from potauser'
+        cur.execute(q)
+        epoch = cur.fetchone()
+        hist = []
+        for t in range(epoch[0], now, 3600*24):
+            q = 'select uuid from potauser where time < ?'
+            cur.execute(q,(t,))
+            lc = 0
+            uc = 0
+            for (uuid,) in cur.fetchall():
+                q = 'select count(*) from potalog where uuid = ?'
+                cur.execute(q,(str(uuid),))
+                l = cur.fetchone()
+                lc = lc + l[0]
+                uc += 1
+            tstr = datetime.fromtimestamp(t).isoformat() + 'Z'                
+            hist.append({'time':tstr, 'users':uc ,'logs':lc})
+                                                
+        return {'errors': 'OK', 'log_uploaded': user[0], 'log_entries': log[0], 'log_expired': expire[0], 'log_error': logerror, 'longest_entry': longest, 'query_elapsed_ms': t2, 'query_perf_degrade_ms': t1, 'log_history': hist }
 
     def upload_log(self, actid, huntid, fd):
         with io.TextIOWrapper(fd, encoding='utf-8') as f:
