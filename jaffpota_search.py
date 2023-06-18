@@ -264,8 +264,9 @@ class JAFFPOTASearch:
         cur.execute(q)
         epoch = cur.fetchone()
         hist = []
-        for t in range(epoch[0], now, 3600*24):
-            q = 'select uuid from potauser where time < ?'
+        hc = 0
+        for t in range(now, epoch[0], -3600*24):
+            q = 'select uuid from potauser where time <= ?'
             cur.execute(q,(t,))
             lc = 0
             uc = 0
@@ -277,7 +278,10 @@ class JAFFPOTASearch:
                 uc += 1
             tstr = datetime.fromtimestamp(t).isoformat() + 'Z'                
             hist.append({'time':tstr, 'users':uc ,'logs':lc})
-                                                
+            hc += 1
+            if hc >= 14:
+                break
+            
         return {'errors': 'OK', 'log_uploaded': user[0], 'log_entries': log[0], 'log_expired': expire[0], 'log_error': logerror, 'longest_entry': longest, 'query_elapsed_ms': t2, 'query_perf_degrade_ms': t1, 'log_history': hist }
 
     def upload_log(self, actid, huntid, fd):
