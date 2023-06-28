@@ -1,13 +1,14 @@
 import csv
 from datetime import datetime, timezone
 import io
+import json
 import os
 import time
 import toml
 import uuid
 import secrets
 import sqlite3
-
+from spottimeline import spottimeline
 
 class JAFFPOTASearch:
     def __init__(self, **args):
@@ -193,7 +194,35 @@ class JAFFPOTASearch:
             q = 'select locid from jaffpota where pota = ?'
             cur.execute(q, (refid,))
             r = cur.fetchone()
-            return {'errors': 'OK', 'counts': len(r), 'locid': r[0].split('.')}
+            return {'errors': 'OK', 'counts': len(r), 'locid': r[0].split(',')}
+
+    def search_logs(self, logid, js):
+        cur = self.conn.cursor()
+        logs = {}
+        for ref in js['refids']:
+            q = 'select * from potalog where uuid = ? and ref = ?'
+            cur.execute(q, (logid, ref,))
+            r = cur.fetchall()
+
+            if len(r) != 0:
+                q = 'select locid from jaffpota where pota = ?'
+                cur.execute(q, (ref,))
+                r = cur.fetchone()
+                logs[ref] = r[0].split(',')
+                
+        return {'errors': 'OK', 'logs': logs}
+
+    def spots(self, options):
+        spots = spottimeline(options)
+        logs = {}
+        for prog in spots:
+            if prog == 'pota' and options['logid'] and not options['bycall']:
+                for ref in spots[prog]:
+                    locid = self.search_log(options['logid'],ref)
+                    if 'locid' in locid:
+                        logs[ref] = locid['locid']
+
+        return {'errors': 'OK', 'spots': spots, 'logs': logs}
 
     def stat_db(self):
         cur = self.conn.cursor()
@@ -281,8 +310,10 @@ class JAFFPOTASearch:
             hc += 1
             if hc >= 14:
                 break
-            
-        return {'errors': 'OK', 'log_uploaded': user[0], 'log_entries': log[0], 'log_expired': expire[0], 'log_error': logerror, 'longest_entry': longest, 'query_elapsed_ms': t2, 'query_perf_degrade_ms': t1, 'log_history': hist }
+        if __name__ == "__main__":
+            return {'errors': 'OK', 'log_uploaded': user[0], 'log_entries': log[0], 'log_expired': expire[0], 'log_error': logerror, 'longest_uuid': uuid_l, 'longest_entry': longest, 'query_elapsed_ms': t2, 'query_perf_degrade_ms': t1, 'log_history': hist }
+        else:
+            return {'errors': 'OK', 'log_uploaded': user[0], 'log_entries': log[0], 'log_expired': expire[0], 'log_error': logerror, 'longest_entry': longest, 'query_elapsed_ms': t2, 'query_perf_degrade_ms': t1, 'log_history': hist }
 
     def upload_log(self, actid, huntid, fd):
         with io.TextIOWrapper(fd, encoding='utf-8') as f:
@@ -501,6 +532,20 @@ class JAFFPOTASearch:
             refid = req.args.get('refid', None)
             return self.search_log(logid, refid)
 
+        elif command == 'LOGSEARCH':
+            logid = req.args.get('logid', None)
+            return self.search_logs(logid, req.json)
+
+        elif command == 'SPOTS':
+            options = {
+                'program': req.args.get('program', None),
+                'period': req.args.get('period', None),
+                'region': req.args.get('region', None),
+                'bycall': req.args.get('bycall', 0),
+                'logid' : req.args.get('logid', None)
+            }
+            return self.spots(options)
+
         elif command == 'STAT':
             return self.stat_db()
 
@@ -527,4 +572,8 @@ if __name__ == "__main__":
         if e['pota'] == 'JA-0014':
             print(e)
 
-    print(potalog.stat_db())
+    stat = potalog.stat_db()
+    refids = {'refids': ['JA-0014', 'JA-0024','JA-1215','JA-2051']}
+    print(potalog.search_logs(stat['longest_uuid'],refids))
+    options = {'logid':stat['longest_uuid'], 'period':'12', 'region':'JA', 'program':None, 'bycall':0}
+    print(json.dumps(potalog.spots(options)))
