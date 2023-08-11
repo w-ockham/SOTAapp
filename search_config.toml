@@ -1,8 +1,13 @@
 [JAFFPOTA]
 dbdir = './database/'
 database = 'jaffpota.db'
-expire = 180
+expire_log = 180
+expire_key = 1800
 
 [SOTA]
 dbdir = './database/'
 database = 'summits.db'
+
+[PILGRIM]
+dbdir = './database/'
+database = 'pilgrim.db'
