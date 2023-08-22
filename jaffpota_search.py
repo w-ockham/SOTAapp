@@ -10,6 +10,7 @@ import secrets
 import sqlite3
 from spottimeline import spottimeline
 
+
 class JAFFPOTASearch:
     def __init__(self, **args):
         self.basedir = args.get('basedir', '.')
@@ -28,6 +29,10 @@ class JAFFPOTASearch:
         q = 'create table if not exists potauser(uuid text,time int, primary key(uuid))'
         cur.execute(q)
         q = 'create index if not exists potauser_idx on potauser(uuid, time)'
+        cur.execute(q)
+        q = 'create table if not exists mqttuser(uuid text,time int, primary key(uuid))'
+        cur.execute(q)
+        q = 'create index if not exists mqttuser_idx on mqttuser(uuid, time)'
         cur.execute(q)
         q = 'create table if not exists potalog(uuid text,ref text,type int,hasc txt,date text,qso int, attempt int,activate int)'
         cur.execute(q)
@@ -49,7 +54,7 @@ class JAFFPOTASearch:
         cur.execute(q)
         self.conn.commit()
 
-    def check_uuid(self, id):
+    def check_uuid(self, id, enable_mqtt):
         cur = self.conn.cursor()
         now = int(datetime.utcnow().timestamp())
         d = datetime.fromtimestamp(now).strftime('%Y-%m-%d')
@@ -62,6 +67,9 @@ class JAFFPOTASearch:
             cur.execute(q2, (e,))
 
         q = 'delete from potauser where time < ?'
+        cur.execute(q, (time,))
+
+        q = 'delete from mqttuser where time < ?'
         cur.execute(q, (time,))
 
         q = 'select time from potauser where uuid = ?'
@@ -77,6 +85,13 @@ class JAFFPOTASearch:
             expire_d = datetime.fromtimestamp(time_e).strftime('%Y-%m-%d')
             res = {'errors': 'OK', 'uuid': id,
                    'create': create_d, 'expire': expire_d}
+            if enable_mqtt:
+                q = 'insert or replace into mqttuser(uuid, time) values(?, ?)'
+                print(cur.execute(q, (str(id), time,)))
+            else:
+                q = 'delete from mqttuser where uuid = ?'
+                cur.execute(q, (str(id),))
+
         self.conn.commit()
         return res
 
@@ -92,6 +107,8 @@ class JAFFPOTASearch:
             q = 'delete from potalog where uuid = ?'
             cur.execute(q, (id,))
             q = 'delete from potauser where uuid = ?'
+            cur.execute(q, (id,))
+            q = 'delete from mqttuser where uuid = ?'
             cur.execute(q, (id,))
             res = {'errors': 'OK', 'uuid': id}
 
@@ -209,7 +226,7 @@ class JAFFPOTASearch:
                 cur.execute(q, (ref,))
                 r = cur.fetchone()
                 logs[ref] = r[0].split(',')
-                
+
         return {'errors': 'OK', 'logs': logs}
 
     def spots(self, options):
@@ -218,7 +235,7 @@ class JAFFPOTASearch:
         for prog in spots:
             if prog == 'pota' and options['logid'] and not options['bycall']:
                 for ref in spots[prog]:
-                    locid = self.search_log(options['logid'],ref)
+                    locid = self.search_log(options['logid'], ref)
                     if 'locid' in locid:
                         logs[ref] = locid['locid']
 
@@ -288,7 +305,6 @@ class JAFFPOTASearch:
         t1 = round((t2 - t1)*1000, 2)
         t2 = round(t2*1000, 2)
 
-
         q = 'select min(time) from potauser'
         cur.execute(q)
         epoch = cur.fetchone()
@@ -296,24 +312,24 @@ class JAFFPOTASearch:
         hc = 0
         for t in range(now, epoch[0], -3600*24):
             q = 'select uuid from potauser where time <= ?'
-            cur.execute(q,(t,))
+            cur.execute(q, (t,))
             lc = 0
             uc = 0
             for (uuid,) in cur.fetchall():
                 q = 'select count(*) from potalog where uuid = ?'
-                cur.execute(q,(str(uuid),))
+                cur.execute(q, (str(uuid),))
                 l = cur.fetchone()
                 lc = lc + l[0]
                 uc += 1
-            tstr = datetime.fromtimestamp(t).isoformat() + 'Z'                
-            hist.append({'time':tstr, 'users':uc ,'logs':lc})
+            tstr = datetime.fromtimestamp(t).isoformat() + 'Z'
+            hist.append({'time': tstr, 'users': uc, 'logs': lc})
             hc += 1
             if hc >= 14:
                 break
         if __name__ == "__main__":
-            return {'errors': 'OK', 'log_uploaded': user[0], 'log_entries': log[0], 'log_expired': expire[0], 'log_error': logerror, 'longest_uuid': uuid_l, 'longest_entry': longest, 'query_elapsed_ms': t2, 'query_perf_degrade_ms': t1, 'log_history': hist }
+            return {'errors': 'OK', 'log_uploaded': user[0], 'log_entries': log[0], 'log_expired': expire[0], 'log_error': logerror, 'longest_uuid': uuid_l, 'longest_entry': longest, 'query_elapsed_ms': t2, 'query_perf_degrade_ms': t1, 'log_history': hist}
         else:
-            return {'errors': 'OK', 'log_uploaded': user[0], 'log_entries': log[0], 'log_expired': expire[0], 'log_error': logerror, 'longest_entry': longest, 'query_elapsed_ms': t2, 'query_perf_degrade_ms': t1, 'log_history': hist }
+            return {'errors': 'OK', 'log_uploaded': user[0], 'log_entries': log[0], 'log_expired': expire[0], 'log_error': logerror, 'longest_entry': longest, 'query_elapsed_ms': t2, 'query_perf_degrade_ms': t1, 'log_history': hist}
 
     def upload_log(self, actid, huntid, fd):
         with io.TextIOWrapper(fd, encoding='utf-8') as f:
@@ -326,11 +342,10 @@ class JAFFPOTASearch:
                 for row in reader:
                     if lc == 0:
                         if row[2] != 'HASC':
-                            return {'errors': 'CSV Format Error'}
-
+                            raise Exception
                         rlen = len(row)
                         if not (rlen in [7, 9]):
-                            return {'errors': 'CSV Format Error'}
+                            raise Exception
 
                         if rlen == 9:
                             activation_log = 1
@@ -362,6 +377,8 @@ class JAFFPOTASearch:
                         cur.execute(q, (id, ref, logty, hasc,
                                         date, qso, attempt, activate,))
                         lc += 1
+                if lc == 0:
+                    raise Exception
             except Exception as e:
                 return {'errors': 'CSV Format Error'}
 
@@ -506,7 +523,8 @@ class JAFFPOTASearch:
 
         if command == 'CHECK':
             logid = req.args.get('logid', None)
-            return self.check_uuid(logid)
+            enable_mqtt = req.args.get('mqtt', None)
+            return self.check_uuid(logid, enable_mqtt)
 
         elif command == 'DELETE':
             logid = req.args.get('logid', None)
@@ -542,7 +560,7 @@ class JAFFPOTASearch:
                 'period': req.args.get('period', None),
                 'region': req.args.get('region', None),
                 'bycall': req.args.get('bycall', 0),
-                'logid' : req.args.get('logid', None)
+                'logid': req.args.get('logid', None)
             }
             return self.spots(options)
 
@@ -573,7 +591,12 @@ if __name__ == "__main__":
             print(e)
 
     stat = potalog.stat_db()
-    refids = {'refids': ['JA-0014', 'JA-0024','JA-1215','JA-2051']}
-    print(potalog.search_logs(stat['longest_uuid'],refids))
-    options = {'logid':stat['longest_uuid'], 'period':'12', 'region':'JA', 'program':None, 'bycall':0}
+    refids = {'refids': ['JA-0014', 'JA-0024', 'JA-1215', 'JA-2051']}
+    print(potalog.search_logs(stat['longest_uuid'], refids))
+    options = {'logid': stat['longest_uuid'], 'period': '12',
+               'region': 'JA', 'program': None, 'bycall': 0}
     print(json.dumps(potalog.spots(options)))
+
+    nie_hunter = 'dcb8165b-db08-4b35-bf2e-da4a4433dcf3'
+    print(potalog.check_uuid(nie_hunter, 0))
+    print(potalog.check_uuid(stat['longest_uuid'], True))
