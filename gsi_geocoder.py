@@ -47,11 +47,10 @@ def lookup_muniCode(m):
             raise Exception
 
         conn.close()
-
         if ty == 'JCC':
             if wdcd == '':
                 res = {'pref': pref, 'addr2': city, 'addr1': '', 'type': ty,
-                       'jcc': jcc, 'jcc_text': jcc_text
+                       'jcc': jcc, 'jcc_text': jcc_text,
                        }
             else:
                 res = {'pref': pref, 'addr2': city, 'addr1': '', 'type': ty,
@@ -158,15 +157,33 @@ def radio_station_qth(callsign, reverse=True):
         return {'errors': 'Parameter out of range'}
 
 
+def lookup_mapcode_municode(lat, lng, muni):
+    r = lookup_muniCode(muni)
+    if 'pref' in r:
+        r['areacode'] = get_areacode(r['pref'])[:1]
+    r['mapcode'] = get_mapcode(lat, lng)
+    r['maidenhead'] = mh.to_maiden(float(lat), float(lng), precision=4)
+    r['errors'] = 'OK'
+    return r
+
+
 def gsi_rev_geocoder(lat, lng, elev=False, mapcode=False):
     try:
         if not lat or not lng:
-            raise Exception
+            return {'errors': 'Parameter out of range.'}
+
         pos = '?lat=' + str(lat) + '&lon=' + str(lng)
         rev_uri = endpoint['revgeocode'] + pos
         elev_uri = endpoint['elevation'] + pos + '&outtype=JSON'
 
         gl = mh.to_maiden(float(lat), float(lng), precision=4)
+        r = {'errors': 'OUTSIDE_JA',
+             'pref': '', 'addr2': '', 'addr1': '', 'type': 'JCC',
+             'jcc': ':Unkown', 'jcc_text': '', 'maidenhead': gl
+             }
+
+        if mapcode:
+            r['mapcode'] = get_mapcode(lat, lng)
 
         r_get = requests.get(rev_uri)
         if r_get.status_code == 200:
@@ -176,15 +193,7 @@ def gsi_rev_geocoder(lat, lng, elev=False, mapcode=False):
                 r = lookup_muniCode(muni)
                 r['addr1'] = res['results']['lv01Nm']
                 r['areacode'] = get_areacode(r['pref'])[:1]
-            else:
-                r = {'pref': '', 'addr2': '', 'addr1': '', 'type': 'JCC',
-                     'jcc': ':Unkown', 'jcc_text': ''
-                     }
-            r['maidenhead'] = gl
-
-            if mapcode:
-                r['mapcode'] = get_mapcode(lat, lng)
-
+                r['errors'] = 'OK'
             if elev:
                 r_get = requests.get(elev_uri)
                 if r_get.status_code == 200:
@@ -197,14 +206,15 @@ def gsi_rev_geocoder(lat, lng, elev=False, mapcode=False):
                         else:
                             r['errors'] = 'OK'
                         return r
-                    raise Exception
+                    raise ValueError(r_get)
             else:
-                r['errors'] = 'OK'
                 return r
-        raise Exception
-    except Exception as err:
-        print(err)
-        return {'errors': 'Parameter out of range'}
+        else:
+            raise ValueError(r_get.text)
+    except ValueError as err:
+        print(f"Error: RevGecode status={err}")
+        return r
+        # return {'errors': 'Parameter out of range'}
 
 
 def get_mapcode_denso(lat, lng):
@@ -327,19 +337,21 @@ def gsi_geocoder_vue(query, elev, revquery):
             'title': r['properties']['title'],
             'address': r['properties']['address'],
             'position': pos,
-            'elevation':elev
-            })
-    return(rslt)
+            'elevation': elev
+        })
+    return (rslt)
+
 
 if __name__ == "__main__":
-    #print(gsi_rev_geocoder(35.595247, 139.517828, True, True))
-    #print(gsi_rev_geocoder(43.804832, 142.879944, True, True))
-    print(get_mapcode2(35.656158618253926,139.6459883257073))
+    print(gsi_rev_geocoder(35.595247, 139.517828, True, True))
+    print(lookup_mapcode_municode(35.594, 139.517, 14137))
+    # print(gsi_rev_geocoder(43.804832, 142.879944, True, True))
+    # print(get_mapcode(35.656158618253926, 139.6459883257073))
 #    print(radio_station_qth('jl1nie'))
 #    print(gsi_rev_geocoder_list([
 #       ['55.754976', '138.232899'],
 #        ['35.754976', '138.232899']], True))
 #    data = gsi_geocoder_vue('aa', True, False)
 #    print(json.dumps(data, ensure_ascii=False, indent=2))
-#data = gsi_geocoder_vue('JA/NN-001', True, False)
-#print(json.dumps(data, ensure_ascii=False, indent=2))
+# data = gsi_geocoder_vue('JA/NN-001', True, False)
+# print(json.dumps(data, ensure_ascii=False, indent=2))
