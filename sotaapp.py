@@ -4,17 +4,17 @@ from flask import Flask
 from flask import request
 from flask_cors import CORS
 from flask_compress import Compress
-
 import json
 import re
 
-from gsi_geocoder import gsi_geocoder, gsi_rev_geocoder, gsi_geocoder_vue, radio_station_qth
+from gsi_geocoder import gsi_geocoder, gsi_rev_geocoder, gsi_geocoder_vue, radio_station_qth, lookup_mapcode_municode
 from aprs_tracklog import aprs_track_stations, aprs_track_tracks
 from sotasummit import sotasummit, jaffpota_parks, sotajaffpota_ref
 from sotaalerts import sotaalerts, sotaspots, sotaalerts_and_spots
 
 from jaffpota_search import JAFFPOTASearch
 from sota_search import SOTASearch
+from pilgrim_search import PILGRIMSearch
 
 from sotakeyer import sotakeyer
 from geomag import kp_indicies
@@ -29,6 +29,7 @@ CORS(app, resources={r"/api": {"origins": "*"}})
 
 pota = JAFFPOTASearch()
 sota = SOTASearch()
+pilgrim = PILGRIMSearch()
 
 
 @app.route("/api/reverse-geocoder/LonLatToAddress")
@@ -52,6 +53,15 @@ def LonLatAddressElevMapCode():
     lat = request.args.get('lat')
     lng = request.args.get('lon')
     res = gsi_rev_geocoder(lat, lng, True, True)
+    return (json.dumps(res))
+
+
+@app.route("/api/reverse-geocoder/LonLatMuniToAddress")
+def LonLatMuniToAddress():
+    lat = request.args.get('lat')
+    lng = request.args.get('lon')
+    muni = request.args.get('muni')
+    res = lookup_mapcode_municode(lat, lng, muni)
     return (json.dumps(res))
 
 
@@ -159,6 +169,7 @@ def SOTAJAFFPOTAParks():
 def myActLog():
     return pota.command(request)
 
+
 @app.route("/api/myact/search")
 def myActSearch():
     programs = request.args.get('programs', None)
@@ -203,7 +214,13 @@ def myActSearch():
             if p['errors'] == 'OK':
                 potares = p['parks']
 
-        return {'errors': 'OK', 'summits': sotares, 'parks': potares}
+        pilres = []
+        if 'PILGRIM' in programs.upper():
+            s = pilgrim.search(options)
+            if s['errors'] == 'OK':
+                pilres = s['temples']
+
+        return {'errors': 'OK', 'summits': sotares, 'parks': potares, 'temples': pilres}
 
 
 @app.route("/api/sota-pota-spots")
