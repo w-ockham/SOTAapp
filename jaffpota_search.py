@@ -211,7 +211,11 @@ class JAFFPOTASearch:
             q = 'select locid from jaffpota where pota = ?'
             cur.execute(q, (refid,))
             r = cur.fetchone()
-            return {'errors': 'OK', 'counts': len(r), 'locid': r[0].split(',')}
+            if r:
+                return {'errors': 'OK', 'counts': len(r), 'locid': r[0].split(',')}
+            else:
+                return {'errors': 'No references were found'}
+
 
     def search_logs(self, logid, js):
         cur = self.conn.cursor()
