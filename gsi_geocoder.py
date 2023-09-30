@@ -64,6 +64,7 @@ def lookup_muniCode(m):
         return res
 
     except Exception as err:
+        print(f"Error muniCd lookup:{err}")
         conn.close()
         return {}
 
@@ -158,7 +159,7 @@ def radio_station_qth(callsign, reverse=True):
 
 
 def lookup_mapcode_municode(lat, lng, muni):
-    r = lookup_muniCode(muni)
+    r = lookup_muniCode(str(int(muni)))
     if 'pref' in r:
         r['areacode'] = get_areacode(r['pref'])[:1]
     r['mapcode'] = get_mapcode(lat, lng)
