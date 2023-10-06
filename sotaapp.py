@@ -34,25 +34,19 @@ pilgrim = PILGRIMSearch()
 
 @app.route("/api/reverse-geocoder/LonLatToAddress")
 def LonLatAddress():
-    lat = request.args.get('lat')
-    lng = request.args.get('lon')
-    res = gsi_rev_geocoder(lat, lng)
+    res = {'errors': 'Service Unavailable'}
     return (json.dumps(res))
 
 
 @app.route("/api/reverse-geocoder/LonLatToAddressElev")
 def LonLatAddressElev():
-    lat = request.args.get('lat')
-    lng = request.args.get('lon')
-    res = gsi_rev_geocoder(lat, lng, True)
+    res = {'errors': 'Service Unavailable'}
     return (json.dumps(res))
 
 
 @app.route("/api/reverse-geocoder/LonLatToAddressElevMapCode")
 def LonLatAddressElevMapCode():
-    lat = request.args.get('lat')
-    lng = request.args.get('lon')
-    res = gsi_rev_geocoder(lat, lng, True, True)
+    res = {'errors': 'Service Unavailable'}
     return (json.dumps(res))
 
 
@@ -200,7 +194,7 @@ def myActSearch():
     }
 
     if not programs:
-        res = {'errors': 'No programs specified'}
+        return {'errors': 'No programs specified'}
     else:
         sotares = []
         if 'SOTA' in programs.upper():
