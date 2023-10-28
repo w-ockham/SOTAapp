@@ -159,13 +159,17 @@ def radio_station_qth(callsign, reverse=True):
 
 
 def lookup_mapcode_municode(lat, lng, muni):
-    r = lookup_muniCode(str(int(muni)))
-    if 'pref' in r:
-        r['areacode'] = get_areacode(r['pref'])[:1]
-    r['mapcode'] = get_mapcode(lat, lng)
-    r['maidenhead'] = mh.to_maiden(float(lat), float(lng), precision=4)
-    r['errors'] = 'OK'
-    return r
+    if muni:
+        r = lookup_muniCode(str(int(muni)))
+        if 'pref' in r:
+            r['areacode'] = get_areacode(r['pref'])[:1]
+        r['mapcode'] = get_mapcode(lat, lng)
+        r['maidenhead'] = mh.to_maiden(float(lat), float(lng), precision=4)
+        r['errors'] = 'OK'
+        return r
+    else:
+        return {'errors': 'Invalid muniCode'}
+
 
 
 def gsi_rev_geocoder(lat, lng, elev=False, mapcode=False):
