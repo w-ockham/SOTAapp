@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 import io
 import json
 import os
+import pyproj
 import time
 import toml
 import uuid
@@ -21,6 +22,8 @@ class JAFFPOTASearch:
 
         self.config = config['JAFFPOTA']
 
+        self.grs80 = pyproj.Geod(ellps='GRS80')
+        
         self.conn = sqlite3.connect(
             self.config['dbdir'] + self.config['database'],
             isolation_level='IMMEDIATE', timeout=3000)
@@ -512,15 +515,28 @@ class JAFFPOTASearch:
         parkarea = options.get('parkarea', 0)
         logid = options.get('logid', None)
 
-        if not parkid:
-            nwlat, nwlng = float(lat), float(lon)
-            selat, selng = float(lat2), float(lon2)
-            res = self.searchParkLoc(selat, nwlat, nwlng, selng,
-                                     parkarea=parkarea, logid=logid)
-        else:
-            res = self.searchParkId(parkid.upper(), logid=logid)
+        try:
+            if not parkid:
+                lat, lon = float(lat), float(lon)
+                if options.get('srange', None):
+                    rng = int(options['srange'])
+                    nwlng, nwlat, _ = self.grs80.fwd(lon, lat, -45.0, rng)
+                    selng, selat, _ = self.grs80.fwd(lon, lat, 135.0, rng)
+                else:
+                    nwlat, nwlng = lat, lon
+                    selat, selng = float(lat2), float(lon2)
+                    
+                res = self.searchParkLoc(selat, nwlat, nwlng, selng,
+                                         parkarea=parkarea, logid=logid)
+            else:
+                res = self.searchParkId(parkid.upper(), logid=logid)
 
-        return {'errors': 'OK', 'parks': res}
+            return {'errors': 'OK', 'parks': res}
+        
+        except Exception as err:
+            print('Error:')
+            print(err)
+            return {'errors': 'parameter out of range'}
 
     def command(self, req):
         command = req.args.get('command', '').upper()
