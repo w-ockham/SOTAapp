@@ -168,7 +168,9 @@ def lookup_mapcode_municode(lat, lng, muni):
         r['errors'] = 'OK'
         return r
     else:
-        return {'errors': 'Invalid muniCode'}
+        return {'errors': 'Invalid muniCode',
+                'maidenhead': mh.to_maiden(float(lat), float(lng), precision=4)
+                }
 
 
 
