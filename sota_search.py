@@ -5,6 +5,7 @@ import re
 import sqlite3
 import toml
 
+
 class SOTASearch:
 
     def __init__(self, **args):
@@ -47,8 +48,11 @@ class SOTASearch:
 
         return res
 
-    def make_response(self, slist):
+    def make_response(self, slist, flag):
         res = []
+
+        if (flag & 0x02) == 2:
+            return ({'totalCount': len(slist)})
 
         for r in slist:
             if not r:
@@ -81,6 +85,11 @@ class SOTASearch:
         cur = self.conn.cursor()
 
         try:
+            if not options.get('flag'):
+                gsifl = 1
+            else:
+                gsifl = int(options['flag'])
+                
             code = options.get('code', None)
             name = options.get('name', None)
 
@@ -88,7 +97,7 @@ class SOTASearch:
                 query = 'select * from summits where code like ?'
                 cur.execute(query, ('%' + code.upper() + '%', ))
                 r = cur.fetchall()
-                res = self.make_response(r)
+                res = self.make_response(r, gsifl)
                 if res:
                     return {'errors': 'OK', 'summits': res}
                 else:
@@ -105,7 +114,7 @@ class SOTASearch:
                     arg = '%' + name + '%'
                 cur.execute(query, (arg, ))
                 r = cur.fetchall()
-                res = self.make_response(r)
+                res = self.make_response(r, gsifl)
                 if res:
                     return {'errors': 'OK', 'summits': res}
                 else:
@@ -140,7 +149,7 @@ class SOTASearch:
 
                 query = 'select * from summits where (lat > ?) and (lat < ?) and (lng > ?) and (lng < ?) and (alt > ?)'
                 cur.execute(query, (selat, nwlat, nwlng, selng, elev))
-                res = self.make_response(cur.fetchall())
+                res = self.make_response(cur.fetchall(), gsifl)
                 if res:
                     return {'errors': 'OK', 'summits': res}
                 else:
@@ -165,18 +174,18 @@ class SOTASearch:
             if '/' in codep or '-' in codep:
                 if codep.startswith('JA'):
                     options['code'] = ambg
-                    return sotasummit_region(False, options)
+                    return self.sotasummit_region(options, False)
                 else:
                     options['code'] = ambg
-                    return sotasummit_region(True, options)
+                    return self.sotasummit_region(options, True)
             else:
                 s = ambg.replace('"', '')
                 if s.encode('utf-8').isalnum():
                     options['name'] = ambg
-                    return sotasummit_region(True, options)
+                    return self.sotasummit_region(options, True)
                 else:
                     options['name'] = ambg
-                    return sotasummit_region(False, options)
+                    return self.sotasummit_region(options, False)
 
 
 if __name__ == "__main__":
@@ -186,7 +195,7 @@ if __name__ == "__main__":
     options = {
         'code': None,
         'name': None,
-        'flag': '0',
+        'flag': 2,
         'lat2': None,
         'lat': '35.918529',
         'lon': '138.522105',
