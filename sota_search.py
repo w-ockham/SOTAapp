@@ -5,9 +5,6 @@ import re
 import sqlite3
 import toml
 
-from gsi_geocoder import gsi_rev_geocoder
-
-
 class SOTASearch:
 
     def __init__(self, **args):
@@ -50,12 +47,8 @@ class SOTASearch:
 
         return res
 
-    def make_response(self, slist, gsiRev=False):
+    def make_response(self, slist):
         res = []
-
-        if gsiRev:
-            if len(slist) > 10:
-                gsiRev = False
 
         for r in slist:
             if not r:
@@ -63,10 +56,6 @@ class SOTASearch:
             else:
                 (summit_id, lat, lng, pts, bonus, elev, name, name_k,
                  desc, desc_k, _, _, actcnt, lastact, lastcall) = r
-                if (gsiRev):
-                    gsi = gsi_rev_geocoder(lat, lng, True)
-                else:
-                    gsi = None
                 gl = mh.to_maiden(float(lat), float(lng), precision=4)
                 res.append({
                     'code': summit_id,
@@ -82,7 +71,7 @@ class SOTASearch:
                     'actcnt': actcnt,
                     'lastact': lastact,
                     'lastcall': lastcall,
-                    'gsi_info': gsi
+                    'gsi_info': None,
                 })
 
         return res
@@ -94,13 +83,12 @@ class SOTASearch:
         try:
             code = options.get('code', None)
             name = options.get('name', None)
-            gsiRev = options.get('revgeo', None)
 
             if code:
                 query = 'select * from summits where code like ?'
                 cur.execute(query, ('%' + code.upper() + '%', ))
                 r = cur.fetchall()
-                res = self.make_response(r, gsiRev=gsiRev)
+                res = self.make_response(r)
                 if res:
                     return {'errors': 'OK', 'summits': res}
                 else:
@@ -117,7 +105,7 @@ class SOTASearch:
                     arg = '%' + name + '%'
                 cur.execute(query, (arg, ))
                 r = cur.fetchall()
-                res = self.make_response(r, gsiRev=gsiRev)
+                res = self.make_response(r)
                 if res:
                     return {'errors': 'OK', 'summits': res}
                 else:
@@ -152,7 +140,7 @@ class SOTASearch:
 
                 query = 'select * from summits where (lat > ?) and (lat < ?) and (lng > ?) and (lng < ?) and (alt > ?)'
                 cur.execute(query, (selat, nwlat, nwlng, selng, elev))
-                res = self.make_response(cur.fetchall(), gsiRev=gsiRev)
+                res = self.make_response(cur.fetchall())
                 if res:
                     return {'errors': 'OK', 'summits': res}
                 else:

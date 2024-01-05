@@ -46,7 +46,7 @@ def spottimeline(options):
          mode, loc, _, comment, spotter, _) = e
         tstr = datetime.fromtimestamp(utc).isoformat() + 'Z'
 
-        if  options['bycall']:
+        if options['bycall']:
             spots[prog][call].append(
                 (tstr, ref, rawfreq, mode.upper(), comment, spotter))
         else:

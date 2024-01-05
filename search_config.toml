@@ -11,3 +11,8 @@ database = 'summits.db'
 [PILGRIM]
 dbdir = './database/'
 database = 'pilgrim.db'
+
+[GEOCODER]
+dbdir = './database/'
+database = 'munitable.db'
+client_id = ''

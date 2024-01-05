@@ -6,17 +6,16 @@ from flask_cors import CORS
 from flask_compress import Compress
 import json
 import re
+import toml
 
-from gsi_geocoder import gsi_geocoder, gsi_rev_geocoder, gsi_geocoder_vue, radio_station_qth, lookup_mapcode_municode
 from aprs_tracklog import aprs_track_stations, aprs_track_tracks
-from sotasummit import sotasummit, jaffpota_parks, sotajaffpota_ref
 from sotaalerts import sotaalerts, sotaspots, sotaalerts_and_spots
 
+from gsi_geocoder import GeoCoder
 from jaffpota_search import JAFFPOTASearch
 from sota_search import SOTASearch
 from pilgrim_search import PILGRIMSearch
 
-from sotakeyer import sotakeyer
 from geomag import kp_indicies
 from nostr_nip05 import nostr_nip05
 from spottimeline import spottimeline
@@ -30,7 +29,7 @@ CORS(app, resources={r"/api": {"origins": "*"}})
 pota = JAFFPOTASearch()
 sota = SOTASearch()
 pilgrim = PILGRIMSearch()
-
+geo = GeoCoder()
 
 @app.route("/api/reverse-geocoder/LonLatToAddress")
 def LonLatAddress():
@@ -44,9 +43,11 @@ def LonLatAddressElev():
     return (json.dumps(res))
 
 
-@app.route("/api/reverse-geocoder/LonLatToAddressElevMapCode")
-def LonLatAddressElevMapCode():
-    res = {'errors': 'Service Unavailable'}
+@app.route("/api/reverse-geocoder/LonLatToAddressMapCode")
+def LonLatAddressMapCode():
+    lat = request.args.get('lat')
+    lng = request.args.get('lon')
+    res = geo.gsi_rev_geocoder(lat, lng)
     return (json.dumps(res))
 
 
@@ -55,21 +56,22 @@ def LonLatMuniToAddress():
     lat = request.args.get('lat')
     lng = request.args.get('lon')
     muni = request.args.get('muni')
-    res = lookup_mapcode_municode(lat, lng, muni)
+    addr = request.args.get('addr')
+    res = geo.lookup_mapcode_municode(lat, lng, muni, addr)
     return (json.dumps(res))
 
 
 @app.route("/api/radio-station/qth")
 def CallToQTH():
     callsign = request.args.get('call')
-    res = radio_station_qth(callsign, False)
+    res = geo.radio_station_qth(callsign, False)
     return (json.dumps(res))
 
 
 @app.route("/api/radio-station/qth_code")
 def CallToQTHwithCode():
     callsign = request.args.get('call')
-    res = radio_station_qth(callsign, True)
+    res = geo.radio_station_qth(callsign, True)
     return (json.dumps(res))
 
 
@@ -80,7 +82,7 @@ def JCCJCGGeocoder():
             q = request.get_json()['q']
         else:
             q = request.args.get('q', '')
-        res = gsi_geocoder_vue(q, True, False)
+        res = geo.gsi_geocoder_vue(q, True, False)
         return (json.dumps(res))
     except Exception as err:
         raise err
@@ -117,16 +119,7 @@ def SOTAliveFile(filename):
 
 @app.route("/api/jaff-pota")
 def JaffpotaParks():
-    parkid = request.args.get('parkid')
-    lat = request.args.get('lat')
-    lng = request.args.get('lon')
-    lat2 = request.args.get('lat2')
-    lng2 = request.args.get('lon2')
-    size = request.args.get('size')
-    res = jaffpota_parks({'parkid': parkid,
-                          'lat': lat, 'lon': lng,
-                          'lat2': lat2, 'lon2': lng2,
-                          'size': size})
+    res = {'errors': 'Service Unavailable'}
     return (json.dumps(res))
 
 
@@ -244,7 +237,7 @@ def SOTAsummits(region):
     elev = request.args.get('elevation')
     flag = request.args.get('flag')
     potadb = request.args.get('potadb')
-    res = sotasummit(region,
+    res = sota.sotasummit(region,
                      {'code': code,
                       'name': name,
                       'ambg': ambg,
@@ -345,29 +338,6 @@ def Nostr():
     name = request.args.get('name')
     res = nostr_nip05(name)
     return (json.dumps(res))
-
-
-@app.route("/api/sotakeyer/")
-def SOTAKeyer():
-    lat = request.args.get('lat')
-    lon = request.args.get('lon')
-    code = request.args.get('code')
-    srange = request.args.get('srange')
-    spot_prefix = request.args.get('spot_prefix')
-    spot_mode = request.args.get('spot_mode')
-    spot_range = request.args.get('spot_range')
-
-    res = sotakeyer({
-        'lat': lat,
-        'lon': lon,
-        'srange': srange,
-        'code': code,
-        'spot_prefix': spot_prefix,
-        'spot_mode': spot_mode,
-        'spot_range': spot_range})
-
-    return (json.dumps(res))
-
 
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0', port=5000)

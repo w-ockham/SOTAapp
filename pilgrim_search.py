@@ -5,9 +5,6 @@ import re
 import sqlite3
 import toml
 
-from gsi_geocoder import gsi_rev_geocoder
-
-
 class PILGRIMSearch:
 
     def __init__(self, **args):
