@@ -21,7 +21,8 @@ from nostr_nip05 import nostr_nip05
 from spottimeline import spottimeline
 
 app = Flask(__name__)
-# app.config["COMPRESS_REGISTER"] = False
+app.json.ensure_ascii = False
+
 compress = Compress()
 compress.init_app(app)
 CORS(app, resources={r"/api": {"origins": "*"}})
@@ -30,6 +31,7 @@ pota = JAFFPOTASearch()
 sota = SOTASearch()
 pilgrim = PILGRIMSearch()
 geo = GeoCoder()
+
 
 @app.route("/api/reverse-geocoder/LonLatToAddress")
 def LonLatAddress():
@@ -92,7 +94,8 @@ def JCCJCGGeocoder():
 @app.route("/api/aprs-tracklog/stations")
 def AprsTrackLogStations():
     rg = request.args.get('range')
-    res = aprs_track_stations(rg)
+    region = request.args.get('region', None)
+    res = aprs_track_stations(rg, region)
     return (json.dumps(res))
 
 
@@ -338,6 +341,48 @@ def Nostr():
     name = request.args.get('name')
     res = nostr_nip05(name)
     return (json.dumps(res))
+
+cache_garmin = {}
+
+@app.route("/api/garmin-connect")
+def GarminConnect():
+    lat = request.args.get('lat')
+    lon = request.args.get('lon')
+    rng = request.args.get('range')
+
+    hkey = lat + '+' + lon
+    if rng and str.isdecimal(rng):
+        hkey += '+' + rng
+
+    if cache_garmin.get(hkey):
+        res = cache_garmin[hkey]
+    else:
+        res= geo.gsi_rev_geocoder(lat, lon, True)
+        if rng and str.isdecimal(rng):
+            options = {
+                'lat' : lat,
+                'lon': lon,
+                'lat2': None,
+                'lon2': None,
+                'elevation': None,
+                'range': rng,
+                'sorted': True,
+            }
+            res['sota_summits'] = []
+            rsota = sota.sotasummit('ja', options)
+            if rsota['errors'] == 'OK':
+                res['sota_summits'] = rsota['summits']
+
+        cache_garmin[hkey] = res
+        if len(cache_garmin) > 16:
+            lastk = next(iter(cache_garmin))
+            cache_garmin.pop(lastk)
+        
+    resg = kp_indicies()
+    res['Ap'] = resg['Ap']
+    res['Kp'] = resg['Kp'][0]
+
+    return (json.dumps(res, ensure_ascii = False))
 
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0', port=5000)

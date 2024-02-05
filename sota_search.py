@@ -56,7 +56,7 @@ class SOTASearch:
 
         for r in slist:
             if not r:
-                return res
+                break
             else:
                 (summit_id, lat, lng, pts, bonus, elev, name, name_k,
                  desc, desc_k, _, _, actcnt, lastact, lastcall) = r
@@ -92,7 +92,8 @@ class SOTASearch:
                 
             code = options.get('code', None)
             name = options.get('name', None)
-
+            sort = options.get('sorted', None)
+            
             if code:
                 query = 'select * from summits where code like ?'
                 cur.execute(query, ('%' + code.upper() + '%', ))
@@ -150,6 +151,13 @@ class SOTASearch:
                 query = 'select * from summits where (lat > ?) and (lat < ?) and (lng > ?) and (lng < ?) and (alt > ?)'
                 cur.execute(query, (selat, nwlat, nwlng, selng, elev))
                 res = self.make_response(cur.fetchall(), gsifl)
+
+                if sort:
+                    for r in res:
+                        az,_,dist = self.grs80.inv(lng,lat,r['lon'],r['lat'])
+                        r['dist'] = int(dist)
+                        r['azmt'] = int(az)
+                    res.sort(key=lambda x: x['dist'])
                 if res:
                     return {'errors': 'OK', 'summits': res}
                 else:

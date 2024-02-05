@@ -9,6 +9,7 @@ import toml
 
 from areacode import get_areacode
 
+
 class GeoCoder:
     def __init__(self, **args):
         self.endpoint = {
@@ -45,11 +46,10 @@ class GeoCoder:
         self.conn = sqlite3.connect(
             self.config['dbdir'] + self.config['database'],
             isolation_level='IMMEDIATE', timeout=3000)
-        
+
     def __del__(self):
         if self.conn:
             self.conn.close()
-            
 
     def lookup_muniCode(self, m, addr):
         cur = self.conn.cursor()
@@ -91,7 +91,6 @@ class GeoCoder:
             print(f"Error muniCd lookup:{err}")
             return {}
 
-
     def lookup_jcc_jcg(self, q):
         cur = conn.cursor()
         try:
@@ -101,7 +100,8 @@ class GeoCoder:
                 cur.execute(query, ('%' + q + '%', '%' + q + '%',))
             else:
                 query = 'select * from muni where City like ? or JCC_text like ? or JCG_text like ?'
-                cur.execute(query, ('%' + q + '%', '%' + q + '%', '%' + q + '%',))
+                cur.execute(
+                    query, ('%' + q + '%', '%' + q + '%', '%' + q + '%',))
 
             rslt = []
             res = cur.fetchall()
@@ -136,18 +136,19 @@ class GeoCoder:
         try:
             if not addr:
                 raise Exception
-            gsi_uri = self.endpoint['geocode'] + '?q=' + urllib.parse.quote(addr)
+            gsi_uri = self.endpoint['geocode'] + \
+                '?q=' + urllib.parse.quote(addr)
             r_get = requests.get(gsi_uri)
             if r_get.status_code == 200:
                 res = r_get.json()
                 lnglat = res[0]['geometry']['coordinates']
-                gl = mh.to_maiden(float(lnglat[1]), float(lnglat[0]), precision=4)
+                gl = mh.to_maiden(
+                    float(lnglat[1]), float(lnglat[0]), precision=4)
                 return (lnglat, gl)
             else:
                 raise Exception
         except Exception as err:
             return ([0, 0], '')
-
 
     def radio_station_qth(self, callsign, reverse=True):
         try:
@@ -163,7 +164,8 @@ class GeoCoder:
                         addr = st['listInfo']['tdfkCd']
                         (lnglat, gl) = self.addr2coord(addr)
                         if reverse:
-                            res = self.gsi_rev_geocoder(lnglat[1], lnglat[0], False)
+                            res = self.gsi_rev_geocoder(
+                                lnglat[1], lnglat[0], False)
                             rslt.append({'callsign': callsign.upper(
                             ), 'coordinates': lnglat, 'maidenhead': gl, 'addr': res})
                         else:
@@ -194,7 +196,7 @@ class GeoCoder:
                     'maidenhead': mh.to_maiden(float(lat), float(lng), precision=4)
                     }
         
-    def gsi_rev_geocoder(self, lat, lng):
+    def gsi_rev_geocoder(self, lat, lng, elev=False):
         try:
             if not lat or not lng:
                 return {'errors': 'Parameter out of range.'}
@@ -204,10 +206,10 @@ class GeoCoder:
         
             rev_uri = self.endpoint['yahoorev'] + '?' + appid + '&'+ pos
             elev_uri = self.endpoint['elevation'] +'?' +  pos + '&outtype=JSON'
-
+            gl = ''
+            
             gl = mh.to_maiden(float(lat), float(lng), precision=4)
             mapcode= self.get_mapcode(lat, lng)
-
             r_get = requests.get(rev_uri)
             if r_get.status_code == 200:
                 res = r_get.json()
@@ -224,14 +226,34 @@ class GeoCoder:
                         r['maidenhead'] = gl
                         r['mapcode'] = mapcode 
                         r['errors'] = 'OK'
+                        if elev:
+                            r_get = requests.get(elev_uri)
+                            if r_get.status_code == 200:
+                                res = r_get.json()
+                                if res:
+                                    r['elevation'] = res['elevation']
+                                else:
+                                    r['elevation'] = '-----'
+                            else:
+                                r['elevation'] = '-----'
                     else:
                         r['addr1'] = 'Unknown'
                         r['maidenhead'] = gl
                         r['mapcode'] = mapcode 
                         r['errors'] = 'OUTSIDE_JA'
                     return r
+                else:
+                    raise Exception(r_get.text)
+            elif r_get.status_code == 400:
+                raise Exception(f"Bad Request param={pos}")
+            elif r_get.status_code == 401:
+                raise Exception("Unauthorized")
+            elif r_get.status_code == 403:
+                raise Exception("Forbidden or Exceed limits")
+            elif r_get.status_code == 404:
+                raise Exception("Not Found")
             else:
-                raise Exception
+                raise Exception("Service unavailable")
         except Exception as err:
             print(f"Error: RevGecode status={err}")
             return {'errors': 'OUTISIDE_JA',
