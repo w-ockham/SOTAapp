@@ -43,30 +43,35 @@ def aprs_track_tracks(oper, rg):
         res = []
         for op in stns['stations']:
             tracks = {}
+            last_seen = {}
+            distance = {}
+            summit = {}
             for s in ssid_table:
                 tracks[s] = []
+                last_seen[s] = 0
+                distance[s] = 0
+                summit[s] = ""
 
             query = 'select time,lat,lng,dist,summit,state from aprslog where operator = ?'
             cur.execute(query, (op,))
-            last_seen = 0
             for (t, lat, lng, dist, sm, st) in cur.fetchall():
                 ssid = ssid_table[int(st) // 10]
                 tracks[ssid] += [(float(lat), float(lng))]
                 now = int(t)
-                if now > last_seen:
-                    last_seen = now
-                    distance = dist
-                    summit = sm
+                if now > last_seen[ssid]:
+                    last_seen[ssid] = now
+                    distance[ssid] = dist
+                    summit[ssid] = sm
 
             for id in tracks.keys():
                 if tracks[id]:
-                    t = datetime.fromtimestamp(last_seen)
+                    t = datetime.fromtimestamp(last_seen[id])
                     f = Feature(geometry=LineString(tracks[id]),
                                 properties={'callsign': op,
                                             'ssid': id,
                                             'lastseen': t.isoformat()+'Z',
-                                            'distance': distance,
-                                            'summit': summit,
+                                            'distance': distance[id],
+                                            'summit': summit[id],
                                             })
                     res += (f,)
         return({'tracks': res})
