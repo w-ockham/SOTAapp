@@ -93,7 +93,7 @@ def JCCJCGGeocoder():
 
 @app.route("/api/aprs-tracklog/stations")
 def AprsTrackLogStations():
-    rg = request.args.get('range')
+    rg = request.args.get('range', 24)
     region = request.args.get('region', None)
     res = aprs_track_stations(rg, region)
     return (json.dumps(res))
@@ -101,9 +101,10 @@ def AprsTrackLogStations():
 
 @app.route("/api/aprs-tracklog/tracks")
 def AprsTrackLogTracks():
-    stn = request.args.get('station')
-    rg = request.args.get('range')
-    res = aprs_track_tracks(stn, rg)
+    stn = request.args.get('station', None)
+    rg = request.args.get('range', 24)
+    region = request.args.get('region', None)
+    res = aprs_track_tracks(stn, rg, region)
     return (json.dumps(res))
 
 
