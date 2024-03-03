@@ -36,7 +36,10 @@ def aprs_track_tracks(oper, rg, region = None):
         cur2 = conn2.cursor()
         
         if not rg:
-            rg = 24
+            rg = '24'
+
+        spot_window = 8
+        
         if not oper:
             stns = aprs_track_stations(rg, region)
         else:
@@ -44,21 +47,23 @@ def aprs_track_tracks(oper, rg, region = None):
 
         res = []
 
+        now = int(datetime.utcnow().timestamp())
+        
         for op in stns['stations']:
             tracks = {}
             last_seen = {}
             distance = {}
             summit = {}
-            query = 'select time, spot_freq, spot_mode, spot_comment from spots where operator = ?'
-            cur2.execute(query, (op,))
+            query = 'select time, summit, spot_freq, spot_mode, spot_comment from spots where operator = ? and time > ?'
+            cur2.execute(query, (op, now - spot_window * 3600))
             spot = cur2.fetchone()
             if spot:
-                (utctime, spot_freq, spot_mode, spot_comment) = spot
+                (utctime, spot_summit, spot_freq, spot_mode, spot_comment) = spot
                 JST = timezone(timedelta(hours=+9), 'JST')
                 dt = datetime.fromtimestamp(utctime).replace(tzinfo=timezone.utc).astimezone(tz=JST)
                 spot_time = dt.isoformat()
             else:
-                (spot_time, spot_freq, spot_mode, spot_comment) = (None, None, None, None)
+                (spot_time, spot_summit, spot_freq, spot_mode, spot_comment) = (None, None, None, None, None)
                 
             for s in ssid_table:
                 tracks[s] = []
@@ -66,14 +71,14 @@ def aprs_track_tracks(oper, rg, region = None):
                 distance[s] = 0
                 summit[s] = ""
 
-            query = 'select time,lat,lng,dist,summit,state from aprslog where operator = ?'
-            cur.execute(query, (op,))
+            query = 'select time,lat,lng,dist,summit,state from aprslog where operator = ? and time > ?'
+            cur.execute(query, (op, now - int(rg) * 3600))
             for (t, lat, lng, dist, sm, st) in cur.fetchall():
                 ssid = ssid_table[int(st) // 10]
                 tracks[ssid] += [(float(lat), float(lng))]
-                now = int(t)
-                if now > last_seen[ssid]:
-                    last_seen[ssid] = now
+                last = int(t)
+                if last > last_seen[ssid]:
+                    last_seen[ssid] = last
                     distance[ssid] = dist
                     summit[ssid] = sm
 
@@ -86,6 +91,7 @@ def aprs_track_tracks(oper, rg, region = None):
                                             'lastseen': t.isoformat()+'Z',
                                             'distance': distance[id],
                                             'summit': summit[id],
+                                            'spot_summit': spot_summit,
                                             'spot_time': spot_time,
                                             'spot_freq': spot_freq,
                                             'spot_mode': spot_mode,

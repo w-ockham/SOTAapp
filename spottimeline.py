@@ -17,8 +17,8 @@ def spottimeline(options):
     timefrom = now - period * 3600
 
     if options['region']:
-        r = options['region']
-        subq = f" and region = '{r}' "
+        regs = options['region'].split(',')
+        subq = " and " + ' or '.join(f"region ='{r}'" for r in regs)
     else:
         subq = " "
 

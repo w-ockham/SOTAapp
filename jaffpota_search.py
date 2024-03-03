@@ -45,6 +45,12 @@ class JAFFPOTASearch:
         cur.execute(q)
         self.conn.commit()
 
+    def toOldRef(ref):
+        return ref.replace('JP-','JA-')
+
+    def toNewRef(ref):
+        return ref.replace('JA-','JP-')
+    
     def __del__(self):
         if self.conn:
             self.conn.close()

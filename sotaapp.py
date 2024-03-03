@@ -137,7 +137,7 @@ def SOTAJAFFPOTAParks():
     msota = re.search(r'\w\w-\d+', refid)
     mpota = re.search(r'\d\d\d\d', refid)
 
-    if 'JA-' in refid or 'JAFF-' in refid or mpota:
+    if 'JA-' in refid or 'JP-' in refid or 'JAFF-' in refid or mpota:
         res = pota.searchParkId(refid)
     elif msota:
         res = sota.searchSummitId(refid)
