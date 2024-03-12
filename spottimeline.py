@@ -18,7 +18,7 @@ def spottimeline(options):
 
     if options['region']:
         regs = options['region'].split(',')
-        subq = " and " + ' or '.join(f"region ='{r}'" for r in regs)
+        subq = " and (" + ' or '.join(f"region ='{r}'" for r in regs) +")"
     else:
         subq = " "
 
