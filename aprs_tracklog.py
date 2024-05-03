@@ -3,7 +3,7 @@ from geojson import LineString, Feature, FeatureCollection
 import json
 import sqlite3
 
-ssid_table = ['7', '9', '6', '5', '8']
+ssid_table = ['7', '9', '5', '6', '8']
 
 
 def aprs_track_stations(rg, region=None):
