@@ -383,9 +383,9 @@ class SOTASearch:
             rslt = sorted(rslt, key = lambda r: r['標高(m)'], reverse = False if 'ASC' in qstr else True)                                                
             l = min(len(rslt), self.max_response)
             if countOnly:
-                return {'summits': len(res)}
+                return {'summits': len(rslt)}
             else:
-                return {'summits': len(res), 'count': l, 'summit_info': rslt[:l]}
+                return {'summits': len(rslt), 'count': l, 'summit_info': rslt[:l]}
         else:
             return {'summits': 0, 'count': 0,  'summit_info': []}
 
