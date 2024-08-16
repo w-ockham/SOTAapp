@@ -242,17 +242,57 @@ def SOTAsummits(region):
     flag = request.args.get('flag')
     potadb = request.args.get('potadb')
     res = sota.sotasummit(region,
-                     {'code': code,
-                      'name': name,
-                      'ambg': ambg,
-                      'flag': flag,
-                      'lat': lat, 'lon': lng,
-                      'lat2': lat2, 'lon2': lng2,
-                      'park': park,
-                      'potadb': potadb,
-                      'elevation': elev,
-                      'range': rng,
-                      'srange': srng})
+                          {'code': code,
+                           'name': name,
+                           'ambg': ambg,
+                           'flag': flag,
+                           'lat': lat, 'lon': lng,
+                           'lat2': lat2, 'lon2': lng2,
+                           'park': park,
+                           'potadb': potadb,
+                           'elevation': elev,
+                           'range': rng,
+                           'srange': srng})
+    return (json.dumps(res))
+
+
+@app.route("/api/summit-info/refid")
+def SOTASummitInfoRefId():
+    refid = request.values.get('refid', "")
+    res = sota.summits_info_by_refid(refid)
+    return (json.dumps(res))
+
+
+@app.route("/api/summit-info/name")
+def SOTASummitInfoName():
+    name = request.values.get('name', "")
+    res = sota.summits_info_by_name(name)
+    return (json.dumps(res))
+
+
+@app.route("/api/summit-info/location")
+def SOTASummitInfoPref():
+    location = request.values.get('location', "")
+    alt_low = request.values.get('alt_low', "0")
+    alt_high = request.values.get('alt_high', "10000")
+    if not alt_high.isdigit():
+        alt_high = 10000
+    if not alt_low.isdigit():
+        alt_low = 0
+    res = sota.summits_info_by_location(location, countOnly = False,  alt_high = int(alt_high), alt_low = int(alt_low))
+    return (json.dumps(res))
+
+
+@app.route("/api/summit-count/location")
+def SOTASummitCountPref():
+    location = request.values.get('location', "")
+    alt_low = request.values.get('alt_low', "0")
+    alt_high = request.values.get('alt_high', "10000")
+    if not alt_high.isdigit():
+        alt_high = 10000
+    if not alt_low.isdigit():
+        alt_low = 0
+    res = sota.summits_info_by_location(location, countOnly = True, alt_high = int(alt_high), alt_low = int(alt_low))
     return (json.dumps(res))
 
 
@@ -343,7 +383,9 @@ def Nostr():
     res = nostr_nip05(name)
     return (json.dumps(res))
 
+
 cache_garmin = {}
+
 
 @app.route("/api/garmin-connect")
 def GarminConnect():
@@ -358,10 +400,10 @@ def GarminConnect():
     if cache_garmin.get(hkey):
         res = cache_garmin[hkey]
     else:
-        res= geo.gsi_rev_geocoder(lat, lon, True)
+        res = geo.gsi_rev_geocoder(lat, lon, True)
         if rng and str.isdecimal(rng):
             options = {
-                'lat' : lat,
+                'lat': lat,
                 'lon': lon,
                 'lat2': None,
                 'lon2': None,
@@ -378,12 +420,13 @@ def GarminConnect():
         if len(cache_garmin) > 16:
             lastk = next(iter(cache_garmin))
             cache_garmin.pop(lastk)
-        
+
     resg = kp_indicies()
     res['Ap'] = resg['Ap']
     res['Kp'] = resg['Kp'][0]
 
-    return (json.dumps(res, ensure_ascii = False))
+    return (json.dumps(res, ensure_ascii=False))
+
 
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0', port=5000)

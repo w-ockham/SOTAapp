@@ -37,7 +37,7 @@ def update_geomagdb(ep, db):
     geomagdb['LastUpdate'] = now
     
     r_get = requests.get(ep)
-
+   
     if r_get.status_code != 200:
         print('Not Found:'+ep)
         return geomagdb
